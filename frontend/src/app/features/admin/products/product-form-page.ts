@@ -60,13 +60,13 @@ const COLORES_SUGERIDOS = [
     </div>
 
     <form
-      class="flex max-w-3xl flex-col gap-8 rounded-3xl bg-corazel-marfil p-6 shadow-sm ring-1 ring-corazel-champagne/40 sm:p-8"
+      class="flex max-w-3xl flex-col gap-6 rounded-3xl bg-corazel-marfil p-4 shadow-sm ring-1 ring-corazel-champagne/40 sm:gap-8 sm:p-8"
       [formGroup]="form"
       (ngSubmit)="submit()"
     >
       <!-- Información general -->
-      <section class="flex flex-col gap-3">
-        <h2 class="font-brand text-lg text-corazel-borgona">Información general</h2>
+      <section class="flex flex-col gap-2">
+        <h2 class="font-brand text-base text-corazel-borgona sm:text-lg">Información general</h2>
 
         <mat-form-field appearance="outline">
           <mat-label>Nombre del producto</mat-label>
@@ -82,7 +82,7 @@ const COLORES_SUGERIDOS = [
         } @else {
           <button
             type="button"
-            class="-mt-1 self-start text-xs text-corazel-borgona/50 underline hover:text-corazel-borgona"
+            class="-mt-1 mb-1 self-start truncate text-xs text-corazel-borgona/50 underline hover:text-corazel-borgona"
             (click)="mostrarSlug.set(true)"
           >
             URL: /producto/{{ form.controls.slug.value || '...' }} · editar
@@ -94,14 +94,13 @@ const COLORES_SUGERIDOS = [
           <textarea matInput formControlName="descripcion" rows="3" placeholder="Tela, ajuste, detalles..."></textarea>
         </mat-form-field>
 
-        <div class="grid grid-cols-2 gap-3">
-          <mat-form-field appearance="outline">
-            <mat-label>Precio</mat-label>
-            <span matTextPrefix>$&nbsp;</span>
-            <input matInput type="number" formControlName="precio" min="0" />
-            <mat-hint>Pesos colombianos (COP)</mat-hint>
-          </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Precio (COP)</mat-label>
+          <span matTextPrefix>$&nbsp;</span>
+          <input matInput type="number" formControlName="precio" min="0" />
+        </mat-form-field>
 
+        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
           <mat-form-field appearance="outline">
             <mat-label>Categoría</mat-label>
             <mat-select formControlName="categoryId">
@@ -110,26 +109,26 @@ const COLORES_SUGERIDOS = [
               }
             </mat-select>
           </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Colección</mat-label>
+            <mat-select formControlName="collectionId">
+              @for (coleccion of colecciones(); track coleccion.id) {
+                <mat-option [value]="coleccion.id">{{ coleccion.nombre }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
         </div>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Colección</mat-label>
-          <mat-select formControlName="collectionId">
-            @for (coleccion of colecciones(); track coleccion.id) {
-              <mat-option [value]="coleccion.id">{{ coleccion.nombre }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-
-        <div class="flex gap-6 pt-1">
+        <div class="flex flex-col gap-1 pt-1 sm:flex-row sm:gap-6">
           <mat-checkbox formControlName="destacado">Destacado en inicio</mat-checkbox>
           <mat-checkbox formControlName="activo">Visible en la tienda</mat-checkbox>
         </div>
       </section>
 
       <!-- Imágenes -->
-      <section class="flex flex-col gap-3 border-t border-corazel-champagne/30 pt-6">
-        <h2 class="font-brand text-lg text-corazel-borgona">Imágenes</h2>
+      <section class="flex flex-col gap-2 border-t border-corazel-champagne/30 pt-5 sm:gap-3 sm:pt-6">
+        <h2 class="font-brand text-base text-corazel-borgona sm:text-lg">Imágenes</h2>
         <div class="flex flex-wrap gap-3">
           @for (imagen of imagenes.controls; track $index) {
             <div class="relative h-24 w-24 overflow-hidden rounded-xl bg-corazel-rosa-pastel">
@@ -160,65 +159,60 @@ const COLORES_SUGERIDOS = [
       </section>
 
       <!-- Variantes -->
-      <section class="flex flex-col gap-3 border-t border-corazel-champagne/30 pt-6">
+      <section class="flex flex-col gap-2 border-t border-corazel-champagne/30 pt-5 sm:gap-3 sm:pt-6">
         <div class="flex items-center justify-between">
-          <h2 class="font-brand text-lg text-corazel-borgona">Tallas, colores y stock</h2>
-          <button
-            mat-stroked-button
-            type="button"
-            class="!rounded-full"
-            (click)="agregarVariante()"
-          >
+          <h2 class="font-brand text-base text-corazel-borgona sm:text-lg">Tallas, colores y stock</h2>
+          <button mat-stroked-button type="button" class="!rounded-full !px-3" (click)="agregarVariante()">
             <mat-icon>add</mat-icon>
             Agregar
           </button>
         </div>
 
-        @if (variantes.length > 0) {
-          <div class="grid grid-cols-[4.5rem_1fr_4.5rem_2.5rem] gap-2 px-1 text-xs font-semibold text-corazel-borgona/60 uppercase">
-            <span>Talla</span>
-            <span>Color</span>
-            <span>Stock</span>
-            <span></span>
-          </div>
-        }
-
         <div class="flex flex-col gap-2">
           @for (variante of variantes.controls; track $index) {
-            <div class="grid grid-cols-[4.5rem_1fr_4.5rem_2.5rem] items-center gap-2" [formGroup]="$any(variante)">
-              <select
-                formControlName="talla"
-                class="h-11 rounded-lg border border-corazel-champagne bg-transparent px-2 text-sm text-corazel-borgona focus:border-corazel-borgona focus:outline-none"
-              >
-                @for (talla of tallas; track talla) {
-                  <option [value]="talla">{{ talla }}</option>
-                }
-              </select>
+            <div
+              class="flex flex-col gap-2 rounded-xl border border-corazel-champagne/50 p-2.5 sm:flex-row sm:items-center sm:gap-2 sm:border-0 sm:p-0"
+              [formGroup]="$any(variante)"
+            >
+              <div class="flex gap-2 sm:flex-1">
+                <select
+                  formControlName="talla"
+                  aria-label="Talla"
+                  class="h-11 w-16 shrink-0 rounded-lg border border-corazel-champagne bg-transparent px-1 text-center text-sm text-corazel-borgona focus:border-corazel-borgona focus:outline-none sm:w-20"
+                >
+                  @for (talla of tallas; track talla) {
+                    <option [value]="talla">{{ talla }}</option>
+                  }
+                </select>
 
-              <input
-                formControlName="color"
-                list="colores-sugeridos"
-                placeholder="Color"
-                class="h-11 rounded-lg border border-corazel-champagne bg-transparent px-3 text-sm text-corazel-borgona placeholder:text-corazel-borgona/40 focus:border-corazel-borgona focus:outline-none"
-              />
+                <input
+                  formControlName="color"
+                  list="colores-sugeridos"
+                  placeholder="Color"
+                  aria-label="Color"
+                  class="h-11 min-w-0 flex-1 rounded-lg border border-corazel-champagne bg-transparent px-3 text-sm text-corazel-borgona placeholder:text-corazel-borgona/40 focus:border-corazel-borgona focus:outline-none"
+                />
+              </div>
 
-              <input
-                formControlName="stock"
-                type="number"
-                min="0"
-                placeholder="0"
-                class="h-11 rounded-lg border border-corazel-champagne bg-transparent px-2 text-center text-sm text-corazel-borgona placeholder:text-corazel-borgona/40 focus:border-corazel-borgona focus:outline-none"
-              />
-
-              <button
-                mat-icon-button
-                type="button"
-                (click)="variantes.removeAt($index)"
-                aria-label="Quitar variante"
-                class="!text-corazel-borgona/40 hover:!text-corazel-borgona"
-              >
-                <mat-icon>delete_outline</mat-icon>
-              </button>
+              <div class="flex items-center gap-2 sm:w-40 sm:shrink-0">
+                <input
+                  formControlName="stock"
+                  type="number"
+                  min="0"
+                  placeholder="Stock"
+                  aria-label="Stock"
+                  class="h-11 w-24 min-w-0 rounded-lg border border-corazel-champagne bg-transparent px-2 text-center text-sm text-corazel-borgona placeholder:text-corazel-borgona/40 focus:border-corazel-borgona focus:outline-none sm:flex-1"
+                />
+                <button
+                  mat-icon-button
+                  type="button"
+                  (click)="variantes.removeAt($index)"
+                  aria-label="Quitar variante"
+                  class="!ml-auto !shrink-0 !text-corazel-borgona/40 hover:!text-corazel-borgona sm:!ml-0"
+                >
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </div>
             </div>
           }
           @if (variantes.length === 0) {
@@ -237,7 +231,7 @@ const COLORES_SUGERIDOS = [
         <p class="text-sm text-red-600">{{ error() }}</p>
       }
 
-      <div class="flex items-center gap-3 border-t border-corazel-champagne/30 pt-6">
+      <div class="flex items-center gap-3 border-t border-corazel-champagne/30 pt-5 sm:pt-6">
         <button
           mat-flat-button
           color="primary"
