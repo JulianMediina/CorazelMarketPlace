@@ -3,7 +3,7 @@
 
 @import 'tailwindcss';
 
-// Paleta e identidad de marca Corazél — ver .claude/CLAUDE.md (raíz del repo) para el detalle completo.
+// Paleta e identidad de marca Corazel — ver .claude/CLAUDE.md (raíz del repo) para el detalle completo.
 // Estos tokens alimentan las utilidades de Tailwind (bg-corazel-borgona, text-corazel-dorado, etc.)
 // usadas en la tienda pública. El panel admin usa Angular Material (ver override de tema más abajo).
 @theme {
@@ -37,7 +37,7 @@ html {
   );
 
   // El panel admin es la única superficie que usa Angular Material; se sobreescriben
-  // los tokens de color de sistema con la paleta real de marca (Borgoña Corazél) en
+  // los tokens de color de sistema con la paleta real de marca (Borgoña Corazel) en
   // vez de generar una paleta tonal M3 completa a partir del hex, que requeriría el
   // algoritmo HCT de Material (fuera de alcance para el MVP).
   --mat-sys-primary: #641f32;

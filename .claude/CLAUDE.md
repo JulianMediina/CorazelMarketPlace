@@ -1,10 +1,10 @@
-# Corazél Lencería — Contexto del proyecto
+# Corazel Lencería — Contexto del proyecto
 
 Este archivo es la fuente de verdad para cualquier sesión de Claude Code que trabaje en este repo. Léelo antes de tocar código.
 
 ## Qué es esto
 
-E-commerce de una sola marca ("Corazél", tienda única — **no** multi-vendedor) de lencería femenina, mercado Colombia (COP). Referencia visual/UX original: https://divinamujerlenceria.com/ (solo inspiración de UX, no de marca).
+E-commerce de una sola marca ("Corazel", tienda única — **no** multi-vendedor) de lencería femenina, mercado Colombia (COP). Referencia visual/UX original: https://divinamujerlenceria.com/ (solo inspiración de UX, no de marca).
 
 ## Modelo de negocio y MVP
 
@@ -26,16 +26,16 @@ No cambiar de framework/ORM sin que el usuario lo pida explícitamente.
 
 ## Identidad de marca (obligatorio respetar al pie de la letra)
 
-**Ortografía oficial: "Corazél"** (con tilde) para nombre de marca en UI/copy; el repo/paquetes usan "corazel" sin tilde por simplicidad técnica.
+**Ortografía oficial: "Corazel"** (sin tilde, en toda la UI, copy, WhatsApp y el repo). El manual de identidad visual original (PDF) usa "Corazél" con tilde, pero el dueño del negocio corrigió esto explícitamente — nunca usar la tilde en ningún texto de la app.
 
 **Tagline:** «REALZA TU CUERPO, CELEBRA QUIÉN ERES.»
 
 **Paleta de colores (hex):**
 | Nombre | Hex | Uso |
 |---|---|---|
-| Rosa Corazél | `#E8B6C3` | fondos, banners, decorativo |
+| Rosa Corazel | `#E8B6C3` | fondos, banners, decorativo |
 | Rosa pastel | `#F6DDE3` | fondo principal, tarjetas, secciones |
-| Borgoña Corazél | `#641F32` | botones, títulos, menú, contraste (color de acción primario) |
+| Borgoña Corazel | `#641F32` | botones, títulos, menú, contraste (color de acción primario) |
 | Marfil | `#FFF9F5` | fondo general |
 | Beige champagne | `#D9C0B0` | fondos secundarios, estética premium |
 | Dorado | `#C9A66B` | líneas, iconos, detalles decorativos |

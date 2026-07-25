@@ -12,7 +12,7 @@ import { AuthService } from '../../core/services/auth.service';
     <div class="min-h-screen bg-corazel-rosa-pastel/30">
       <header class="border-b border-corazel-champagne/50 bg-corazel-marfil">
         <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <span class="font-brand text-xl text-corazel-borgona">Corazél · Admin</span>
+          <span class="font-brand text-xl text-corazel-borgona">Corazel · Admin</span>
 
           <nav class="flex items-center gap-6">
             <a

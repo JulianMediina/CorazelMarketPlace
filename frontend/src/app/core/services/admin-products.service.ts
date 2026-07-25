@@ -21,7 +21,6 @@ export interface ProductImageInput {
 
 export interface ProductInput {
   nombre: string;
-  slug: string;
   descripcion: string;
   precio: number;
   categoryId: string;

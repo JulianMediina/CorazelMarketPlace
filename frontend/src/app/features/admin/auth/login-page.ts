@@ -15,7 +15,7 @@ import { FIELD_INPUT_CLASSES, FIELD_LABEL_CLASSES } from '../../../shared/styles
     <div class="flex min-h-dvh items-center justify-center bg-corazel-rosa-pastel/40 px-4 py-8">
       <div class="w-full max-w-sm rounded-3xl bg-corazel-marfil p-6 shadow-lg ring-1 ring-corazel-champagne/40 sm:p-8">
         <div class="flex flex-col items-center text-center">
-          <img src="/logo-corazel.jpeg" alt="Corazél" class="h-14 w-14 rounded-full object-cover shadow-sm" />
+          <img src="/logo-corazel.jpeg" alt="Corazel" class="h-14 w-14 rounded-full object-cover shadow-sm" />
           <h1 class="mt-3 font-brand text-xl text-corazel-borgona sm:text-2xl">Panel de administración</h1>
           <p class="mt-1 text-sm text-corazel-borgona/60">Inicia sesión para gestionar el catálogo</p>
         </div>

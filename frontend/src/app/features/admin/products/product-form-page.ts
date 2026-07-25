@@ -9,6 +9,7 @@ import { Talla } from '../../../core/models/product.model';
 import { AdminProductsService } from '../../../core/services/admin-products.service';
 import { CatalogService } from '../../../core/services/catalog.service';
 import { FIELD_INPUT_CLASSES, FIELD_LABEL_CLASSES } from '../../../shared/styles/form-field.styles';
+import { compressImage } from '../../../shared/utils/image-compression';
 
 const TALLAS: Talla[] = ['XS', 'S', 'M', 'L', 'XL'];
 
@@ -58,29 +59,8 @@ const COLORES_SUGERIDOS = [
 
         <label class="flex flex-col gap-1">
           <span class="${FIELD_LABEL_CLASSES}">Nombre del producto</span>
-          <input
-            formControlName="nombre"
-            (blur)="autoSlug()"
-            placeholder="Ej. Body Aura encaje"
-            class="${FIELD_INPUT_CLASSES}"
-          />
+          <input formControlName="nombre" placeholder="Ej. Body Aura encaje" class="${FIELD_INPUT_CLASSES}" />
         </label>
-
-        @if (mostrarSlug()) {
-          <label class="flex flex-col gap-1">
-            <span class="${FIELD_LABEL_CLASSES}">URL (slug)</span>
-            <input formControlName="slug" class="${FIELD_INPUT_CLASSES}" />
-            <span class="text-xs text-corazel-borgona/40">Se genera sola desde el nombre; solo cámbiala si sabes lo que haces.</span>
-          </label>
-        } @else {
-          <button
-            type="button"
-            class="-mt-1 mb-1 self-start truncate text-xs text-corazel-borgona/50 underline hover:text-corazel-borgona"
-            (click)="mostrarSlug.set(true)"
-          >
-            URL: /producto/{{ form.controls.slug.value || '...' }} · editar
-          </button>
-        }
 
         <label class="flex flex-col gap-1">
           <span class="${FIELD_LABEL_CLASSES}">Descripción</span>
@@ -264,14 +244,12 @@ export class ProductFormPageComponent implements OnInit {
   protected readonly guardando = signal(false);
   protected readonly subiendoImagen = signal(false);
   protected readonly error = signal<string | null>(null);
-  protected readonly mostrarSlug = signal(false);
 
   private productId: string | null = null;
   protected readonly editando = signal(false);
 
   protected readonly form = this.fb.nonNullable.group({
     nombre: ['', Validators.required],
-    slug: ['', Validators.required],
     descripcion: ['', Validators.required],
     precio: [0, [Validators.required, Validators.min(0)]],
     categoryId: ['', Validators.required],
@@ -300,7 +278,6 @@ export class ProductFormPageComponent implements OnInit {
       this.catalogService.getProduct(this.productId).subscribe((producto) => {
         this.form.patchValue({
           nombre: producto.nombre,
-          slug: producto.slug,
           descripcion: producto.descripcion,
           precio: Number(producto.precio),
           categoryId: producto.category.id,
@@ -322,43 +299,42 @@ export class ProductFormPageComponent implements OnInit {
     }
   }
 
-  autoSlug(): void {
-    const slugControl = this.form.controls.slug;
-    if (slugControl.value) {
-      return;
-    }
-    const nombre = this.form.controls.nombre.value;
-    slugControl.setValue(
-      nombre
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[̀-ͯ]/g, '')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, ''),
-    );
-  }
-
   agregarVariante(): void {
     this.variantes.push(this.crearVarianteGroup());
   }
 
-  onImagenSeleccionada(event: Event): void {
+  async onImagenSeleccionada(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) {
       return;
     }
     this.subiendoImagen.set(true);
-    this.adminProducts.uploadImage(file).subscribe({
-      next: ({ url, publicId }) => {
-        this.imagenes.push(this.crearImagenGroup({ url, publicId }));
-        this.subiendoImagen.set(false);
-      },
-      error: () => {
-        this.error.set('No se pudo subir la imagen.');
-        this.subiendoImagen.set(false);
-      },
-    });
+    this.error.set(null);
+
+    try {
+      // Las fotos de celular suelen pesar 5-15MB; se comprimen en el navegador antes de
+      // subirlas para que no choquen con el límite del servidor ni tarden una eternidad
+      // en datos móviles.
+      const comprimida = await compressImage(file);
+      this.adminProducts.uploadImage(comprimida).subscribe({
+        next: ({ url, publicId }) => {
+          this.imagenes.push(this.crearImagenGroup({ url, publicId }));
+          this.subiendoImagen.set(false);
+        },
+        error: (err: { status?: number }) => {
+          this.error.set(
+            err?.status === 413
+              ? 'Esa imagen sigue siendo muy pesada. Intenta con otra foto.'
+              : 'No se pudo subir la imagen. Revisa tu conexión e intenta de nuevo.',
+          );
+          this.subiendoImagen.set(false);
+        },
+      });
+    } catch {
+      this.error.set('No se pudo procesar la imagen. Intenta con otra foto.');
+      this.subiendoImagen.set(false);
+    }
     input.value = '';
   }
 
@@ -382,7 +358,7 @@ export class ProductFormPageComponent implements OnInit {
     request.subscribe({
       next: () => void this.router.navigate(['/admin/productos']),
       error: () => {
-        this.error.set('No se pudo guardar el producto. Revisa que el slug no esté repetido.');
+        this.error.set('No se pudo guardar el producto. Intenta de nuevo.');
         this.guardando.set(false);
       },
     });

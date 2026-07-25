@@ -1,8 +1,4 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -17,6 +13,15 @@ const productListInclude = {
   imagenes: { orderBy: { orden: 'asc' as const } },
   variantes: true,
 };
+
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
 
 @Injectable()
 export class ProductsService {
@@ -77,30 +82,28 @@ export class ProductsService {
   }
 
   async create(dto: CreateProductDto) {
-    await this.ensureSlugAvailable(dto.slug);
     const seller = await this.getDefaultSeller();
+    const slug = await this.generateUniqueSlug(dto.nombre);
 
     const { variantes, imagenes, ...data } = dto;
 
-    const product = await this.prisma.product.create({
+    return this.prisma.product.create({
       data: {
         ...data,
+        slug,
         sellerId: seller.id,
         variantes: { create: variantes },
         imagenes: { create: imagenes ?? [] },
       },
       include: productListInclude,
     });
-
-    return product;
   }
 
   async update(id: string, dto: UpdateProductDto) {
     await this.findOne(id);
-    if (dto.slug) {
-      await this.ensureSlugAvailable(dto.slug, id);
-    }
 
+    // El slug es inmutable tras la creación (no viene en el DTO): así no se rompen
+    // enlaces ya compartidos por WhatsApp/redes si el admin luego cambia el nombre.
     const { variantes, imagenes, ...data } = dto;
 
     // Variantes/imágenes se reemplazan por completo: el admin envía el estado final
@@ -134,13 +137,22 @@ export class ProductsService {
     });
   }
 
-  private async ensureSlugAvailable(slug: string, excludeId?: string) {
-    const existing = await this.prisma.product.findUnique({ where: { slug } });
-    if (existing && existing.id !== excludeId) {
-      throw new ConflictException(
-        `Ya existe un producto con el slug "${slug}"`,
-      );
+  /**
+   * Genera el slug a partir del nombre y lo desambigua solo (agregando -2, -3, ...) si ya
+   * existe. El admin nunca ve ni edita esto — no es una persona técnica y no debería tener
+   * que resolver conflictos de URL a mano.
+   */
+  private async generateUniqueSlug(nombre: string): Promise<string> {
+    const base = slugify(nombre);
+    let slug = base;
+    let sufijo = 2;
+
+    while (await this.prisma.product.findUnique({ where: { slug } })) {
+      slug = `${base}-${sufijo}`;
+      sufijo += 1;
     }
+
+    return slug;
   }
 
   /**
@@ -152,7 +164,7 @@ export class ProductsService {
     return this.prisma.seller.upsert({
       where: { slug: DEFAULT_SELLER_SLUG },
       update: {},
-      create: { nombre: 'Corazél', slug: DEFAULT_SELLER_SLUG },
+      create: { nombre: 'Corazel', slug: DEFAULT_SELLER_SLUG },
     });
   }
 }

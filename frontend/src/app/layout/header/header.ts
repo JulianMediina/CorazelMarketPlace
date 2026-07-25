@@ -16,7 +16,7 @@ import { WhatsappService } from '../../core/services/whatsapp.service';
       <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <a routerLink="/" class="flex items-center gap-2 font-brand text-2xl tracking-wide text-corazel-borgona">
           <img src="/logo-corazel.jpeg" alt="" class="h-9 w-9 rounded-full object-cover" />
-          Corazél
+          Corazel
         </a>
 
         <nav class="hidden items-center gap-8 sm:flex">
@@ -33,6 +33,13 @@ import { WhatsappService } from '../../core/services/whatsapp.service';
             class="font-body text-sm font-medium tracking-wide text-corazel-borgona/70 uppercase hover:text-corazel-borgona"
           >
             Colecciones
+          </a>
+          <a
+            routerLink="/nosotros"
+            routerLinkActive="text-corazel-borgona"
+            class="font-body text-sm font-medium tracking-wide text-corazel-borgona/70 uppercase hover:text-corazel-borgona"
+          >
+            Nosotros
           </a>
         </nav>
 

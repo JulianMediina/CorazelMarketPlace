@@ -1,4 +1,4 @@
-# Corazél Lencería
+# Corazel Lencería
 
 E-commerce de una sola marca (lencería femenina, Colombia). Ver [.claude/CLAUDE.md](.claude/CLAUDE.md) para el contexto completo del negocio, identidad de marca y estándares de código — léelo antes de tocar el código.
 

@@ -20,7 +20,7 @@ import { ProductCardComponent } from '../../shared/components/product-card/produ
       />
       <div class="relative">
         <p class="font-body text-xs font-semibold tracking-[0.2em] text-corazel-borgona/70 uppercase">
-          Corazél Lencería
+          Corazel Lencería
         </p>
         <h1 class="mx-auto mt-3 max-w-xl font-brand text-4xl text-corazel-borgona sm:text-5xl">
           Realza tu cuerpo, celebra quién eres.

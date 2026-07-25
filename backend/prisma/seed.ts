@@ -44,7 +44,7 @@ async function main() {
   const seller = await prisma.seller.upsert({
     where: { slug: 'corazel' },
     update: {},
-    create: { nombre: 'Corazél', slug: 'corazel' },
+    create: { nombre: 'Corazel', slug: 'corazel' },
   });
   console.log(`Seller de sistema listo: ${seller.nombre}`);
 
@@ -73,7 +73,7 @@ async function main() {
   await prisma.admin.upsert({
     where: { email: adminEmail },
     update: {},
-    create: { email: adminEmail, passwordHash, nombre: 'Admin Corazél' },
+    create: { email: adminEmail, passwordHash, nombre: 'Admin Corazel' },
   });
   console.log(
     `Admin listo: ${adminEmail} (cambiar password tras el primer login)`,

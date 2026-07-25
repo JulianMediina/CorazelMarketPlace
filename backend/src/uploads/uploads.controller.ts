@@ -10,7 +10,9 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UploadsService } from './uploads.service';
 
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+// El frontend ya comprime las fotos antes de subirlas; este límite es solo una red de
+// seguridad para el caso raro de que llegue algo sin comprimir.
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
 @Controller('uploads')
 export class UploadsController {

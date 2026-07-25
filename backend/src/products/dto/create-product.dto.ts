@@ -20,10 +20,6 @@ export class CreateProductDto {
   nombre: string;
 
   @IsString()
-  @MinLength(2)
-  slug: string;
-
-  @IsString()
   @MinLength(10)
   descripcion: string;
 

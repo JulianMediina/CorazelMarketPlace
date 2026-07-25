@@ -14,7 +14,7 @@ export class WhatsappService {
         `• ${item.product.nombre} — Talla ${item.talla}, Color ${item.color} x${item.cantidad}`,
     );
     const mensaje = [
-      'Hola Corazél, quiero hacer este pedido:',
+      'Hola Corazel, quiero hacer este pedido:',
       ...lineas,
       '',
       '¿Me ayudan a confirmar disponibilidad y el total?',
@@ -24,13 +24,13 @@ export class WhatsappService {
   }
 
   buildProductInquiryLink(nombreProducto: string): string {
-    const mensaje = `Hola Corazél, quiero más información sobre "${nombreProducto}".`;
+    const mensaje = `Hola Corazel, quiero más información sobre "${nombreProducto}".`;
     return this.buildLink(mensaje);
   }
 
   /** Link genérico para el punto de entrada persistente (header/bottom-nav), sin producto en contexto. */
   buildGeneralInquiryLink(): string {
-    return this.buildLink('Hola Corazél, quiero más información sobre sus productos.');
+    return this.buildLink('Hola Corazel, quiero más información sobre sus productos.');
   }
 
   private buildLink(mensaje: string): string {

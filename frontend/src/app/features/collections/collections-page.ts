@@ -12,7 +12,7 @@ import { CatalogService } from '../../core/services/catalog.service';
     <div class="mx-auto max-w-4xl px-4 py-10 text-center">
       <h1 class="font-brand text-3xl text-corazel-borgona">Colecciones</h1>
       <p class="mt-2 text-sm text-corazel-borgona/70">
-        Cada colección de Corazél tiene su propia esencia. Descubre la tuya.
+        Cada colección de Corazel tiene su propia esencia. Descubre la tuya.
       </p>
 
       <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">

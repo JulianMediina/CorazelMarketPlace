@@ -13,7 +13,7 @@ const VARIANT_CLASSES: Record<ButtonVariant, string> = {
 };
 
 /**
- * Botón del design system de Corazél (ver manual de identidad de marca).
+ * Botón del design system de Corazel (ver manual de identidad de marca).
  * primary: fondo borgoña, texto marfil. secondary: borde/texto borgoña, fondo transparente.
  * Con [routerLink] se renderiza como <a> (navegación); sin él, como <button> (acción/submit).
  */
