@@ -100,27 +100,25 @@ const COLORES_SUGERIDOS = [
           <input matInput type="number" formControlName="precio" min="0" />
         </mat-form-field>
 
-        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3">
-          <mat-form-field appearance="outline">
-            <mat-label>Categoría</mat-label>
-            <mat-select formControlName="categoryId">
-              @for (categoria of categorias(); track categoria.id) {
-                <mat-option [value]="categoria.id">{{ categoria.nombre }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Categoría</mat-label>
+          <mat-select formControlName="categoryId">
+            @for (categoria of categorias(); track categoria.id) {
+              <mat-option [value]="categoria.id">{{ categoria.nombre }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Colección</mat-label>
-            <mat-select formControlName="collectionId">
-              @for (coleccion of colecciones(); track coleccion.id) {
-                <mat-option [value]="coleccion.id">{{ coleccion.nombre }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-        </div>
+        <mat-form-field appearance="outline">
+          <mat-label>Colección</mat-label>
+          <mat-select formControlName="collectionId">
+            @for (coleccion of colecciones(); track coleccion.id) {
+              <mat-option [value]="coleccion.id">{{ coleccion.nombre }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
 
-        <div class="flex flex-col gap-1 pt-1 sm:flex-row sm:gap-6">
+        <div class="flex flex-col gap-1 pt-1">
           <mat-checkbox formControlName="destacado">Destacado en inicio</mat-checkbox>
           <mat-checkbox formControlName="activo">Visible en la tienda</mat-checkbox>
         </div>
@@ -168,51 +166,53 @@ const COLORES_SUGERIDOS = [
           </button>
         </div>
 
-        <div class="flex flex-col gap-2">
+        <div class="flex flex-col gap-3">
           @for (variante of variantes.controls; track $index) {
             <div
-              class="flex flex-col gap-2 rounded-xl border border-corazel-champagne/50 p-2.5 sm:flex-row sm:items-center sm:gap-2 sm:border-0 sm:p-0"
+              class="relative flex flex-col gap-2 rounded-xl border border-corazel-champagne/50 p-3"
               [formGroup]="$any(variante)"
             >
-              <div class="flex gap-2 sm:flex-1">
+              <button
+                type="button"
+                (click)="variantes.removeAt($index)"
+                aria-label="Quitar variante"
+                class="absolute top-2 right-2 flex h-7 w-7 items-center justify-center rounded-full text-corazel-borgona/40 hover:bg-corazel-rosa-pastel hover:text-corazel-borgona"
+              >
+                <mat-icon class="!text-lg">close</mat-icon>
+              </button>
+
+              <label class="flex flex-col gap-1">
+                <span class="text-xs font-medium text-corazel-borgona/60">Talla</span>
                 <select
                   formControlName="talla"
-                  aria-label="Talla"
-                  class="h-11 w-16 shrink-0 rounded-lg border border-corazel-champagne bg-transparent px-1 text-center text-sm text-corazel-borgona focus:border-corazel-borgona focus:outline-none sm:w-20"
+                  class="h-11 w-full rounded-lg border border-corazel-champagne bg-transparent px-3 text-sm text-corazel-borgona focus:border-corazel-borgona focus:outline-none"
                 >
                   @for (talla of tallas; track talla) {
                     <option [value]="talla">{{ talla }}</option>
                   }
                 </select>
+              </label>
 
+              <label class="flex flex-col gap-1">
+                <span class="text-xs font-medium text-corazel-borgona/60">Color</span>
                 <input
                   formControlName="color"
                   list="colores-sugeridos"
-                  placeholder="Color"
-                  aria-label="Color"
-                  class="h-11 min-w-0 flex-1 rounded-lg border border-corazel-champagne bg-transparent px-3 text-sm text-corazel-borgona placeholder:text-corazel-borgona/40 focus:border-corazel-borgona focus:outline-none"
+                  placeholder="Ej. Negro"
+                  class="h-11 w-full rounded-lg border border-corazel-champagne bg-transparent px-3 text-sm text-corazel-borgona placeholder:text-corazel-borgona/40 focus:border-corazel-borgona focus:outline-none"
                 />
-              </div>
+              </label>
 
-              <div class="flex items-center gap-2 sm:w-40 sm:shrink-0">
+              <label class="flex flex-col gap-1">
+                <span class="text-xs font-medium text-corazel-borgona/60">Stock</span>
                 <input
                   formControlName="stock"
                   type="number"
                   min="0"
-                  placeholder="Stock"
-                  aria-label="Stock"
-                  class="h-11 w-24 min-w-0 rounded-lg border border-corazel-champagne bg-transparent px-2 text-center text-sm text-corazel-borgona placeholder:text-corazel-borgona/40 focus:border-corazel-borgona focus:outline-none sm:flex-1"
+                  placeholder="0"
+                  class="h-11 w-full rounded-lg border border-corazel-champagne bg-transparent px-3 text-sm text-corazel-borgona placeholder:text-corazel-borgona/40 focus:border-corazel-borgona focus:outline-none"
                 />
-                <button
-                  mat-icon-button
-                  type="button"
-                  (click)="variantes.removeAt($index)"
-                  aria-label="Quitar variante"
-                  class="!ml-auto !shrink-0 !text-corazel-borgona/40 hover:!text-corazel-borgona sm:!ml-0"
-                >
-                  <mat-icon>delete_outline</mat-icon>
-                </button>
-              </div>
+              </label>
             </div>
           }
           @if (variantes.length === 0) {
