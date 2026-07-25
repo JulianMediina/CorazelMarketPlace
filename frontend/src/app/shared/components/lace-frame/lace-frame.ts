@@ -1,85 +1,39 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
-const PETALOS = [0, 72, 144, 216, 288];
-const FLORES = [
-  { cx: 24, cy: 10 },
-  { cx: 44, cy: 32 },
-];
+const DORADO = '%23C9A66B'; // #C9A66B URL-encoded para usar dentro del data URI del SVG
 
-/** Un solo motivo floral de esquina; se reutiliza 4 veces (espejado/rotado por CSS) en LaceFrameComponent. */
-@Component({
-  selector: 'app-corner-motif',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <svg viewBox="0 0 120 120" fill="none" class="h-full w-full">
-      <path
-        d="M4 4 C 30 6, 20 34, 44 32 C 66 30, 58 6, 84 8"
-        stroke="currentColor"
-        stroke-width="1.4"
-        stroke-linecap="round"
-      />
-      <path
-        d="M4 4 C 8 26, 34 20, 32 44 C 30 64, 6 58, 8 84"
-        stroke="currentColor"
-        stroke-width="1.4"
-        stroke-linecap="round"
-      />
-      @for (flor of flores; track flor.cx) {
-        <g [attr.transform]="'translate(' + flor.cx + ',' + flor.cy + ')'">
-          @for (angulo of petalos; track angulo) {
-            <ellipse
-              cx="0"
-              cy="-5"
-              rx="2.6"
-              ry="4.6"
-              fill="currentColor"
-              opacity="0.85"
-              [attr.transform]="'rotate(' + angulo + ')'"
-            />
-          }
-          <circle cx="0" cy="0" r="2" fill="currentColor" />
-        </g>
-      }
-      <ellipse cx="14" cy="46" rx="3" ry="6" fill="currentColor" opacity="0.7" transform="rotate(24 14 46)" />
-      <ellipse cx="46" cy="14" rx="3" ry="6" fill="currentColor" opacity="0.7" transform="rotate(-24 46 14)" />
-    </svg>
-  `,
-  styles: `
-    :host {
-      display: block;
-    }
-  `,
-})
-export class CornerMotifComponent {
-  protected readonly flores = FLORES;
-  protected readonly petalos = PETALOS;
-}
+// Un solo "eslabón" de enredadera (tallo ondulado + una hoja + una flor pequeña) que se repite
+// en mosaico vía CSS background-repeat, formando una guía floral continua a lo largo de cada
+// borde de la pantalla — en vez de 4 acentos sueltos en las esquinas.
+const VINE_TILE = `
+<svg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'>
+  <path d='M0 22 C 8 10, 14 34, 22 22 C 30 10, 36 34, 44 22' stroke='${DORADO}' stroke-width='1.3' fill='none' stroke-linecap='round'/>
+  <circle cx='11' cy='15' r='1.8' fill='${DORADO}'/>
+  <ellipse cx='22' cy='22' rx='2.2' ry='3.6' fill='${DORADO}' opacity='0.85' transform='rotate(45 22 22)'/>
+  <circle cx='33' cy='29' r='1.8' fill='${DORADO}'/>
+</svg>`.replace(/\n\s*/g, '');
+
+const VINE_URL = `url("data:image/svg+xml,${encodeURIComponent(VINE_TILE)}")`;
 
 /**
- * Marco decorativo floral en las cuatro esquinas de la pantalla, inspirado en el "detalle
- * dorado + flores delicadas" del manual de identidad. Es puramente decorativo: fixed,
- * pointer-events-none y muy baja opacidad para no competir con el contenido ni estorbar la
- * lectura/scroll en mobile. Oculto en mobile (prioridad de la app) para no restar espacio útil.
+ * Marco decorativo floral que recorre los cuatro bordes de la pantalla como una enredadera
+ * continua (mosaico repetido de un solo motivo), inspirado en el "detalle dorado + flores
+ * delicadas" del manual de identidad. Puramente decorativo: fixed y pointer-events-none, no
+ * bloquea ningún tap/click. Visible en todos los tamaños de pantalla, incluido mobile.
  */
 @Component({
   selector: 'app-lace-frame',
   standalone: true,
-  imports: [CornerMotifComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="pointer-events-none fixed inset-0 z-20 hidden sm:block" aria-hidden="true">
-      <app-corner-motif class="absolute top-0 left-0 h-24 w-24 text-corazel-dorado opacity-25 sm:h-32 sm:w-32" />
-      <app-corner-motif
-        class="absolute top-0 right-0 h-24 w-24 -scale-x-100 text-corazel-dorado opacity-25 sm:h-32 sm:w-32"
-      />
-      <app-corner-motif
-        class="absolute bottom-0 left-0 h-24 w-24 -scale-y-100 text-corazel-dorado opacity-25 sm:h-32 sm:w-32"
-      />
-      <app-corner-motif
-        class="absolute right-0 bottom-0 h-24 w-24 -scale-100 text-corazel-dorado opacity-25 sm:h-32 sm:w-32"
-      />
+    <div class="pointer-events-none fixed inset-0 z-40 opacity-25" aria-hidden="true">
+      <div class="absolute inset-x-0 top-0 h-4" [style.background-image]="vineUrl" style="background-repeat: repeat-x"></div>
+      <div class="absolute inset-x-0 bottom-0 h-4" [style.background-image]="vineUrl" style="background-repeat: repeat-x"></div>
+      <div class="absolute inset-y-0 left-0 w-4" [style.background-image]="vineUrl" style="background-repeat: repeat-y"></div>
+      <div class="absolute inset-y-0 right-0 w-4" [style.background-image]="vineUrl" style="background-repeat: repeat-y"></div>
     </div>
   `,
 })
-export class LaceFrameComponent {}
+export class LaceFrameComponent {
+  protected readonly vineUrl = VINE_URL;
+}

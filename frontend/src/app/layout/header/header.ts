@@ -34,13 +34,6 @@ import { WhatsappService } from '../../core/services/whatsapp.service';
           >
             Colecciones
           </a>
-          <a
-            routerLink="/nosotros"
-            routerLinkActive="text-corazel-borgona"
-            class="font-body text-sm font-medium tracking-wide text-corazel-borgona/70 uppercase hover:text-corazel-borgona"
-          >
-            Nosotros
-          </a>
         </nav>
 
         <div class="flex items-center gap-1">

@@ -30,10 +30,6 @@ export const routes: Routes = [
         path: 'carrito',
         loadComponent: () => import('./features/cart/cart-page').then((m) => m.CartPageComponent),
       },
-      {
-        path: 'nosotros',
-        loadComponent: () => import('./features/about/about-page').then((m) => m.AboutPageComponent),
-      },
     ],
   },
   {

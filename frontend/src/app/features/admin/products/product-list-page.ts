@@ -43,12 +43,14 @@ import { CopCurrencyPipe } from '../../../shared/pipes/cop-currency.pipe';
 
         <ng-container matColumnDef="acciones">
           <th mat-header-cell *matHeaderCellDef></th>
-          <td mat-cell *matCellDef="let producto">
-            <a mat-icon-button [routerLink]="['/admin/productos', producto.id]" aria-label="Editar">
+          <td mat-cell *matCellDef="let producto" class="whitespace-nowrap">
+            <a mat-button [routerLink]="['/admin/productos', producto.id]" class="!text-corazel-borgona">
               <mat-icon>edit</mat-icon>
+              Editar
             </a>
-            <button mat-icon-button (click)="eliminar(producto)" aria-label="Eliminar">
+            <button mat-button (click)="eliminar(producto)" class="!text-red-600">
               <mat-icon>delete</mat-icon>
+              Eliminar
             </button>
           </td>
         </ng-container>
