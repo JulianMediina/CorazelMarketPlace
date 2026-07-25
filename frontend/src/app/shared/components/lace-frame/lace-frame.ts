@@ -1,6 +1,10 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
-const DORADO = '%23C9A66B'; // #C9A66B URL-encoded para el data URI del SVG
+// Sin codificar: encodeURIComponent() más abajo se encarga de todo el string de una sola
+// pasada. Codificarlo a mano acá y volver a pasarlo por encodeURIComponent lo doble-codifica
+// (# -> %23 -> %2523), lo que invalida el color y deja el stroke invisible (solo quedan
+// visibles los círculos, que caen a su fill por defecto) — el bug de "solo se ven puntos".
+const DORADO = '#C9A66B';
 const TILE_WIDTH = 18;
 const TILE_HEIGHT = 72;
 

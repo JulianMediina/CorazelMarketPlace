@@ -16,9 +16,15 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET'),
-        // En segundos: evita el tipado estricto de cadenas tipo "7d" que expone @nestjs/jwt.
         signOptions: {
-          expiresIn: config.get<number>('JWT_EXPIRES_IN_SECONDS', 604800),
+          // Los env vars siempre llegan como string; si se le pasa "604800" (string) a
+          // jsonwebtoken en vez del número 604800, la librería `ms` lo interpreta como
+          // MILISEGUNDOS (~10 min) en lugar de segundos (7 días) — de ahí sesiones que
+          // expiraban casi de inmediato. parseInt fuerza el número real.
+          expiresIn: parseInt(
+            config.get<string>('JWT_EXPIRES_IN_SECONDS', '604800'),
+            10,
+          ),
         },
       }),
     }),
