@@ -2,15 +2,14 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
 import { AuthService } from '../../../core/services/auth.service';
+import { FIELD_INPUT_CLASSES, FIELD_LABEL_CLASSES } from '../../../shared/styles/form-field.styles';
 
 @Component({
   selector: 'app-login-page',
   standalone: true,
-  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatButtonModule, MatIconModule],
+  imports: [ReactiveFormsModule, MatButtonModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="flex min-h-dvh items-center justify-center bg-corazel-rosa-pastel/40 px-4 py-8">
@@ -21,33 +20,40 @@ import { AuthService } from '../../../core/services/auth.service';
           <p class="mt-1 text-sm text-corazel-borgona/60">Inicia sesión para gestionar el catálogo</p>
         </div>
 
-        <form class="mt-6 flex flex-col gap-2 sm:mt-8" [formGroup]="form" (ngSubmit)="submit()">
-          <mat-form-field appearance="outline">
-            <mat-label>Email</mat-label>
-            <input matInput type="email" formControlName="email" autocomplete="username" />
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Contraseña</mat-label>
+        <form class="mt-6 flex flex-col gap-4 sm:mt-8" [formGroup]="form" (ngSubmit)="submit()">
+          <label class="flex flex-col gap-1">
+            <span class="${FIELD_LABEL_CLASSES}">Email</span>
             <input
-              matInput
-              [type]="mostrarPassword() ? 'text' : 'password'"
-              formControlName="password"
-              autocomplete="current-password"
+              type="email"
+              formControlName="email"
+              autocomplete="username"
+              placeholder="tu@email.com"
+              class="${FIELD_INPUT_CLASSES}"
             />
-            <button
-              type="button"
-              matSuffix
-              (click)="mostrarPassword.set(!mostrarPassword())"
-              [attr.aria-label]="mostrarPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
-              class="flex h-8 w-8 items-center justify-center text-corazel-borgona/40 hover:text-corazel-borgona"
-            >
-              <mat-icon class="!text-xl">{{ mostrarPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
-            </button>
-          </mat-form-field>
+          </label>
+
+          <label class="flex flex-col gap-1">
+            <span class="${FIELD_LABEL_CLASSES}">Contraseña</span>
+            <div class="relative">
+              <input
+                [type]="mostrarPassword() ? 'text' : 'password'"
+                formControlName="password"
+                autocomplete="current-password"
+                class="${FIELD_INPUT_CLASSES} pr-11"
+              />
+              <button
+                type="button"
+                (click)="mostrarPassword.set(!mostrarPassword())"
+                [attr.aria-label]="mostrarPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                class="absolute inset-y-0 right-2 flex items-center text-corazel-borgona/40 hover:text-corazel-borgona"
+              >
+                <mat-icon class="!text-xl">{{ mostrarPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+              </button>
+            </div>
+          </label>
 
           @if (error()) {
-            <p class="-mt-1 mb-1 text-sm text-red-600">{{ error() }}</p>
+            <p class="-mt-2 text-sm text-red-600">{{ error() }}</p>
           }
 
           <button

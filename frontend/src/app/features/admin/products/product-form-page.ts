@@ -2,16 +2,13 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@ang
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
 import { Category } from '../../../core/models/category.model';
 import { Collection } from '../../../core/models/collection.model';
 import { Talla } from '../../../core/models/product.model';
 import { AdminProductsService } from '../../../core/services/admin-products.service';
 import { CatalogService } from '../../../core/services/catalog.service';
+import { FIELD_INPUT_CLASSES, FIELD_LABEL_CLASSES } from '../../../shared/styles/form-field.styles';
 
 const TALLAS: Talla[] = ['XS', 'S', 'M', 'L', 'XL'];
 
@@ -32,16 +29,7 @@ const COLORES_SUGERIDOS = [
 @Component({
   selector: 'app-product-form-page',
   standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    RouterLink,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    MatCheckboxModule,
-    MatButtonModule,
-    MatIconModule,
-  ],
+  imports: [ReactiveFormsModule, RouterLink, MatButtonModule, MatIconModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="mb-6 flex items-center justify-between">
@@ -68,17 +56,22 @@ const COLORES_SUGERIDOS = [
       <section class="flex flex-col gap-2">
         <h2 class="font-brand text-base text-corazel-borgona sm:text-lg">Información general</h2>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Nombre del producto</mat-label>
-          <input matInput formControlName="nombre" (blur)="autoSlug()" placeholder="Ej. Body Aura encaje" />
-        </mat-form-field>
+        <label class="flex flex-col gap-1">
+          <span class="${FIELD_LABEL_CLASSES}">Nombre del producto</span>
+          <input
+            formControlName="nombre"
+            (blur)="autoSlug()"
+            placeholder="Ej. Body Aura encaje"
+            class="${FIELD_INPUT_CLASSES}"
+          />
+        </label>
 
         @if (mostrarSlug()) {
-          <mat-form-field appearance="outline">
-            <mat-label>URL (slug)</mat-label>
-            <input matInput formControlName="slug" />
-            <mat-hint>Se genera sola desde el nombre; solo cámbiala si sabes lo que haces.</mat-hint>
-          </mat-form-field>
+          <label class="flex flex-col gap-1">
+            <span class="${FIELD_LABEL_CLASSES}">URL (slug)</span>
+            <input formControlName="slug" class="${FIELD_INPUT_CLASSES}" />
+            <span class="text-xs text-corazel-borgona/40">Se genera sola desde el nombre; solo cámbiala si sabes lo que haces.</span>
+          </label>
         } @else {
           <button
             type="button"
@@ -89,38 +82,58 @@ const COLORES_SUGERIDOS = [
           </button>
         }
 
-        <mat-form-field appearance="outline">
-          <mat-label>Descripción</mat-label>
-          <textarea matInput formControlName="descripcion" rows="3" placeholder="Tela, ajuste, detalles..."></textarea>
-        </mat-form-field>
+        <label class="flex flex-col gap-1">
+          <span class="${FIELD_LABEL_CLASSES}">Descripción</span>
+          <textarea
+            formControlName="descripcion"
+            rows="3"
+            placeholder="Tela, ajuste, detalles..."
+            class="${FIELD_INPUT_CLASSES} resize-none"
+          ></textarea>
+        </label>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Precio (COP)</mat-label>
-          <span matTextPrefix>$&nbsp;</span>
-          <input matInput type="number" formControlName="precio" min="0" />
-        </mat-form-field>
+        <label class="flex flex-col gap-1">
+          <span class="${FIELD_LABEL_CLASSES}">Precio (COP)</span>
+          <div class="relative">
+            <span class="pointer-events-none absolute inset-y-0 left-4 flex items-center text-sm text-corazel-borgona/50">$</span>
+            <input
+              type="number"
+              formControlName="precio"
+              min="0"
+              class="${FIELD_INPUT_CLASSES} pl-8"
+            />
+          </div>
+        </label>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Categoría</mat-label>
-          <mat-select formControlName="categoryId">
+        <label class="flex flex-col gap-1">
+          <span class="${FIELD_LABEL_CLASSES}">Categoría</span>
+          <select formControlName="categoryId" class="${FIELD_INPUT_CLASSES}">
+            <option value="" disabled>Selecciona una categoría</option>
             @for (categoria of categorias(); track categoria.id) {
-              <mat-option [value]="categoria.id">{{ categoria.nombre }}</mat-option>
+              <option [value]="categoria.id">{{ categoria.nombre }}</option>
             }
-          </mat-select>
-        </mat-form-field>
+          </select>
+        </label>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Colección</mat-label>
-          <mat-select formControlName="collectionId">
+        <label class="flex flex-col gap-1">
+          <span class="${FIELD_LABEL_CLASSES}">Colección</span>
+          <select formControlName="collectionId" class="${FIELD_INPUT_CLASSES}">
+            <option value="" disabled>Selecciona una colección</option>
             @for (coleccion of colecciones(); track coleccion.id) {
-              <mat-option [value]="coleccion.id">{{ coleccion.nombre }}</mat-option>
+              <option [value]="coleccion.id">{{ coleccion.nombre }}</option>
             }
-          </mat-select>
-        </mat-form-field>
+          </select>
+        </label>
 
-        <div class="flex flex-col gap-1 pt-1">
-          <mat-checkbox formControlName="destacado">Destacado en inicio</mat-checkbox>
-          <mat-checkbox formControlName="activo">Visible en la tienda</mat-checkbox>
+        <div class="flex flex-col gap-2 pt-1">
+          <label class="flex items-center gap-2 text-sm text-corazel-borgona">
+            <input type="checkbox" formControlName="destacado" class="h-4 w-4 rounded accent-corazel-borgona" />
+            Destacado en inicio
+          </label>
+          <label class="flex items-center gap-2 text-sm text-corazel-borgona">
+            <input type="checkbox" formControlName="activo" class="h-4 w-4 rounded accent-corazel-borgona" />
+            Visible en la tienda
+          </label>
         </div>
       </section>
 
@@ -182,11 +195,8 @@ const COLORES_SUGERIDOS = [
               </button>
 
               <label class="flex flex-col gap-1">
-                <span class="text-xs font-medium text-corazel-borgona/60">Talla</span>
-                <select
-                  formControlName="talla"
-                  class="h-11 w-full rounded-lg border border-corazel-champagne bg-transparent px-3 text-sm text-corazel-borgona focus:border-corazel-borgona focus:outline-none"
-                >
+                <span class="${FIELD_LABEL_CLASSES}">Talla</span>
+                <select formControlName="talla" class="${FIELD_INPUT_CLASSES}">
                   @for (talla of tallas; track talla) {
                     <option [value]="talla">{{ talla }}</option>
                   }
@@ -194,24 +204,18 @@ const COLORES_SUGERIDOS = [
               </label>
 
               <label class="flex flex-col gap-1">
-                <span class="text-xs font-medium text-corazel-borgona/60">Color</span>
+                <span class="${FIELD_LABEL_CLASSES}">Color</span>
                 <input
                   formControlName="color"
                   list="colores-sugeridos"
                   placeholder="Ej. Negro"
-                  class="h-11 w-full rounded-lg border border-corazel-champagne bg-transparent px-3 text-sm text-corazel-borgona placeholder:text-corazel-borgona/40 focus:border-corazel-borgona focus:outline-none"
+                  class="${FIELD_INPUT_CLASSES}"
                 />
               </label>
 
               <label class="flex flex-col gap-1">
-                <span class="text-xs font-medium text-corazel-borgona/60">Stock</span>
-                <input
-                  formControlName="stock"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  class="h-11 w-full rounded-lg border border-corazel-champagne bg-transparent px-3 text-sm text-corazel-borgona placeholder:text-corazel-borgona/40 focus:border-corazel-borgona focus:outline-none"
-                />
+                <span class="${FIELD_LABEL_CLASSES}">Stock</span>
+                <input formControlName="stock" type="number" min="0" placeholder="0" class="${FIELD_INPUT_CLASSES}" />
               </label>
             </div>
           }
