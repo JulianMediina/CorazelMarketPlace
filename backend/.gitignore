@@ -7,3 +7,5 @@ coverage
 .env
 .env.local
 .env.*.local
+# Bloque listo para pegar en Render (Environment > Add from .env) — ver DEPLOYMENT.md
+.env.render

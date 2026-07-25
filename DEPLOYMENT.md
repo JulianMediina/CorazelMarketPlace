@@ -1,159 +1,169 @@
-# Despliegue gratuito de Corazél
+# Despliegue de Corazél — guía detallada (100% gratis, 100% dashboards)
 
-Guía paso a paso para poner Corazél en producción usando **solo tiers gratuitos**: Neon (PostgreSQL), Render (backend) y Vercel (frontend). No se pide tarjeta de crédito en ninguno de los tres.
+Nada de esto requiere terminal ni comandos de consola de tu parte. Todo se hace haciendo clic en Neon, Render, Vercel y Cloudinary, pegando bloques de variables de entorno. El único paso "técnico" (correr migraciones y sembrar los datos iniciales: colecciones, categorías, admin) queda dentro del **Build Command de Render**, así que corre solo en cada deploy — no hay que ejecutar nada a mano.
 
-**Regla del proyecto: cero cambios de código en cada deploy.** Todo lo que cambia entre local y producción (URLs, credenciales, número de WhatsApp) vive en variables de entorno de cada proveedor — nunca se edita un archivo a mano para desplegar. El repo no tiene que tocarse otra vez salvo que cambie el código en sí.
+Orden obligatorio: **1. Neon → 2. Cloudinary → 3. Render → 4. Vercel** (cada paso necesita un dato del anterior).
 
-## Arquitectura
-
-```
-┌─────────────┐      HTTPS       ┌──────────────┐   connection string   ┌─────────────┐
-│   Vercel    │ ───────────────► │    Render    │ ─────────────────────►│    Neon     │
-│  (Angular)  │  API_URL (env)   │  (NestJS API)│   DATABASE_URL/DIRECT_URL (env)      │
-└─────────────┘                  └──────┬───────┘                       └─────────────┘
-                                         │
-                                         ▼
-                                   ┌──────────┐
-                                   │Cloudinary│ (imágenes de producto)
-                                   └──────────┘
-```
-
-| Capa | Servicio | Config | Notas free tier |
-|---|---|---|---|
-| Base de datos | [Neon](https://neon.tech) | 100% por connection string (env vars) | Se autosuspende tras inactividad, revive sola en el siguiente query |
-| Backend (NestJS) | [Render](https://render.com) | 100% por variables de entorno | Se duerme tras ~15 min sin tráfico; cold start ~30-50s |
-| Frontend (Angular) | [Vercel](https://vercel.com) | 100% por variables de entorno (build genera el config, no se edita código) | Sin límite práctico para este tamaño de sitio |
-| Imágenes | [Cloudinary](https://cloudinary.com) | 100% por variables de entorno | 25 créditos/mes |
-
-Orden de setup: **Neon → Render → Vercel**, porque cada capa necesita una URL/credencial de la anterior.
+Plantillas listas para copiar (ya están en el repo, en `.gitignore` para que nunca subas valores reales):
+- `backend/.env.render.example` → cópialo a `backend/.env.render`, complétalo, pégalo en Render.
+- `frontend/.env.vercel.example` → cópialo a `frontend/.env.vercel`, complétalo, pégalo en Vercel.
 
 ---
 
-## 0. Prerrequisitos
+## 1. Neon — base de datos PostgreSQL
 
-Código en GitHub (Vercel y Render se conectan por ahí):
+### 1.1 Crear la cuenta y el proyecto
 
-```bash
-git add -A
-git commit -m "..."
-git push
+1. Entra a **https://console.neon.tech** y crea la cuenta (puedes usar "Continue with GitHub").
+2. Si es tu primer proyecto, Neon te lleva directo al formulario de creación. Si ya tienes otros proyectos, botón **"New Project"** (arriba a la derecha del listado de proyectos).
+3. Formulario de creación:
+   - **Project name**: `corazel`
+   - **Postgres version**: deja la que viene por defecto (la más reciente).
+   - **Region**: elige la más cercana a Colombia — de las disponibles en el free tier, `AWS US East (N. Virginia)` suele ser la de mejor latencia.
+4. Click **Create Project**. Neon crea automáticamente una base de datos (nombre por defecto `neondb`) y un usuario (nombre por defecto `neondb_owner` o similar).
+
+### 1.2 Encontrar las connection strings
+
+Neon no te da host/usuario/password sueltos: te da una **connection string** completa (`postgresql://...`), y necesitas **dos versiones** de la misma:
+
+1. Apenas creas el proyecto, caes en el **Project Dashboard**. Ahí mismo, en la parte superior, hay un panel llamado **"Connection string"** (si no lo ves, en el menú lateral izquierdo es la primera opción, ícono de enchufe, dice **"Connect"** o **"Dashboard"**).
+2. Dentro de ese panel hay:
+   - Un dropdown **"Branch"** → deja `main` (o `production`, el que venga por defecto).
+   - Un dropdown **"Database"** → deja el que venga por defecto.
+   - Un dropdown **"Role"** → deja el que venga por defecto.
+   - Un **toggle/checkbox que dice "Pooled connection"** (a veces aparece como "Connection pooling"). Este toggle es la clave:
+     - **Con el toggle ACTIVADO**: el host de la connection string tiene `-pooler` antes del dominio (ej. `ep-abc-123-pooler.us-east-1.aws.neon.tech`). **Copia este valor → es tu `DATABASE_URL`.**
+     - **Con el toggle DESACTIVADO**: el mismo host pero sin `-pooler` (ej. `ep-abc-123.us-east-1.aws.neon.tech`). **Copia este valor → es tu `DIRECT_URL`.**
+3. Hay un botón de copiar (ícono de portapapeles) al lado de la connection string — úsalo para no transcribir mal el password (es un password generado, no lo vas a memorizar).
+4. Guarda las dos strings en un lugar temporal (un bloc de notas), las vas a pegar en Render en el paso 3. Se ven así:
+
+```
+postgresql://neondb_owner:AbC123xYz@ep-abc-123-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require
+postgresql://neondb_owner:AbC123xYz@ep-abc-123.us-east-1.aws.neon.tech/neondb?sslmode=require
 ```
 
-Cuentas gratis en [neon.tech](https://neon.tech), [render.com](https://render.com), [vercel.com](https://vercel.com), [cloudinary.com](https://cloudinary.com) (puedes usar tu cuenta de GitHub para las cuatro).
+   (Mismo usuario y password en ambas, solo cambia el host por la presencia o no de `-pooler`.)
+
+> Por qué dos: la *pooled* la usa el backend en producción (aguanta muchas conexiones cortas simultáneas). La *direct* la necesitan las migraciones de Prisma (`prisma migrate deploy`), que no funcionan bien a través del pooler. `backend/prisma/schema.prisma` ya está configurado para usar `DATABASE_URL` (pooled) en runtime y `DIRECT_URL` (direct) solo para migrar — no hay que tocar ese archivo.
+
+> Si en vez de Neon prefieres Supabase: Project Settings → Database → "Connection string", ahí el toggle equivalente se llama "Use connection pooling" (puerto `6543` = pooled/`DATABASE_URL`, puerto `5432` = direct/`DIRECT_URL`).
+
+No hay nada más que hacer en Neon por ahora — las tablas las crea Render automáticamente en el primer deploy (paso 3).
 
 ---
 
-## 1. Neon — PostgreSQL vía connection string
+## 2. Cloudinary — almacenamiento de imágenes
 
-Neon no usa usuario/password/host sueltos: todo se maneja como **connection string** (`postgresql://...`), y expone dos variantes que hay que usar en lugares distintos.
+1. Entra a **https://cloudinary.com/users/register_free** y crea la cuenta.
+2. Tras confirmar el email, caes en el **Console / Dashboard** (`https://console.cloudinary.com`).
+3. En la página principal del dashboard hay un panel llamado **"Product Environment Credentials"** (o simplemente aparece arriba del todo, debajo del saludo con tu nombre). Ahí ves tres campos:
+   - **Cloud name** — visible directamente.
+   - **API Key** — visible directamente.
+   - **API Secret** — aparece oculto como `••••••••`, con un ícono de ojo 👁 al lado para revelarlo. Haz clic ahí para verlo, y en el ícono de copiar para copiarlo.
+4. Guarda los tres valores en el mismo bloc de notas temporal — van al mismo bloque de Render en el siguiente paso.
 
-1. [console.neon.tech](https://console.neon.tech) → **New Project** → nombre `corazel`, región más cercana a Colombia (`AWS us-east-1` suele ser la disponible más rápida en el free tier).
-2. Ve a **Connect** (o **Dashboard → Connection Details**). Ahí Neon te da un selector con dos modos:
-   - **Pooled connection** (toggle "Connection pooling" activado / host con sufijo `-pooler`): úsala como `DATABASE_URL`. Es la que usa la app en runtime — soporta muchas conexiones cortas simultáneas, ideal para un backend serverless-friendly como Render.
-   - **Direct connection** (mismo host sin `-pooler`): úsala como `DIRECT_URL`. Las migraciones de Prisma (`prisma migrate deploy`) necesitan esta conexión directa, sin pooler de por medio.
-3. Las dos se ven así (mismo usuario/password/db, host distinto):
-
-```
-DATABASE_URL="postgresql://usuario:password@ep-xxxx-pooler.us-east-1.aws.neon.tech/corazel?sslmode=require"
-DIRECT_URL="postgresql://usuario:password@ep-xxxx.us-east-1.aws.neon.tech/corazel?sslmode=require"
-```
-
-4. No hace falta tocar `backend/prisma/schema.prisma`: ya está preparado para este patrón —
-
-```prisma
-datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")   // pooled, runtime
-  directUrl = env("DIRECT_URL")     // directa, solo migraciones
-}
-```
-
-Guarda ambas connection strings — van directo a las variables de entorno de Render en el siguiente paso, nunca a un archivo del repo.
-
-> Si en vez de Neon usas Supabase, el mismo patrón aplica: su pooler vive en el puerto `6543` y la conexión directa en el `5432`. `DATABASE_URL`/`DIRECT_URL` se completan igual.
+⚠️ **Nunca pegues estos tres valores en ningún archivo del repo ni en un chat/documento que se vaya a subir a git.** Van únicamente en el bloque de variables de entorno de Render (paso 3), que no se commitea. Si alguna vez quedan expuestos por accidente, revócalos de inmediato desde este mismo dashboard (ícono de "regenerar" junto al API Secret).
 
 ---
 
-## 2. Cloudinary
+## 3. Render — backend (API NestJS)
 
-1. Crea la cuenta en [cloudinary.com](https://cloudinary.com/users/register_free).
-2. En el **Dashboard** copia `Cloud name`, `API Key` y `API Secret` — van como variables de entorno en Render (paso 3). **Nunca los pegues en este archivo ni en ningún otro del repo**: son credenciales reales, no placeholders.
+### 3.1 Crear el servicio
 
----
+1. Entra a **https://dashboard.render.com** y crea la cuenta (recomendado: "Continue with GitHub", así el paso 2 queda hecho).
+2. Botón **"New +"** (arriba a la derecha) → **"Web Service"**.
+3. Si es la primera vez, Render pide autorizar acceso a tu cuenta de GitHub → autoriza y da acceso al repositorio `CorazelMarketPlace` (puedes dar acceso a "All repositories" o solo a ese, como prefieras).
+4. En la lista de repos que aparece, busca `CorazelMarketPlace` y click **"Connect"**.
 
-## 3. Backend — Render
+### 3.2 Configurar el servicio
 
-1. [dashboard.render.com](https://dashboard.render.com) → **New** → **Web Service** → conecta el repo.
-2. Configuración:
+En el formulario que aparece, completa exactamente:
 
 | Campo | Valor |
 |---|---|
-| Root Directory | `backend` |
-| Runtime | Node |
-| Build Command | `npm install && npx prisma migrate deploy && npm run build` |
-| Start Command | `npm run start:prod` |
-| Instance Type | **Free** |
+| **Name** | `corazel-backend` (o el que quieras, define tu URL: `<name>.onrender.com`) |
+| **Region** | la más cercana disponible |
+| **Branch** | `master` |
+| **Root Directory** | `backend` |
+| **Runtime** | `Node` |
+| **Build Command** | `npm install && npx prisma migrate deploy && npx prisma db seed && npm run build` |
+| **Start Command** | `npm run start:prod` |
+| **Instance Type** | **Free** |
 
-   `npm install` ya dispara `prisma generate` solo (`postinstall` en `package.json`).
+   El Build Command hace **todo el trabajo de base de datos automáticamente en cada deploy**: instala dependencias, crea/actualiza las tablas (`migrate deploy`), y siembra colecciones + categorías + el usuario admin (`db seed`, usa `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD` de las variables de entorno de abajo). Es idempotente — puedes redeployar mil veces que no duplica nada ni te resetea la contraseña del admin si ya la cambiaste.
 
-3. Pestaña **Environment** → variables (todas van acá, ninguna se commitea):
+### 3.3 Variables de entorno (pegar el bloque completo)
 
-| Variable | Valor |
+**No llenes los campos uno por uno.** Antes de crear el servicio (o después, en la pestaña **Environment**), busca el botón **"Add from .env"** (está junto a "Add Environment Variable", arriba de la lista de variables) — abre un cuadro de texto donde puedes **pegar un bloque completo** y Render lo separa solo en variables individuales.
+
+1. En tu proyecto, copia `backend/.env.render.example` a `backend/.env.render`.
+2. Completa ahí los valores reales (las dos connection strings de Neon del paso 1.2, los tres de Cloudinary del paso 2, y el resto — ver detalle de cada campo abajo).
+3. Copia **todo el contenido** de `backend/.env.render` y pégalo en el cuadro "Add from .env" de Render.
+
+Detalle de cada variable del bloque:
+
+| Variable | De dónde sale |
 |---|---|
-| `DATABASE_URL` | pooled de Neon (paso 1) |
-| `DIRECT_URL` | direct de Neon (paso 1) |
-| `JWT_SECRET` | `openssl rand -hex 32` |
-| `JWT_EXPIRES_IN_SECONDS` | `604800` |
-| `CORS_ORIGIN` | URL de Vercel (la agregas en el paso 4, después de crearla) |
-| `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | del paso 2 |
-| `WHATSAPP_SALES_NUMBER` | formato E.164 sin `+`, ej. `573001234567` |
-| `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | solo se usan al correr el seed (paso 3.5), no en runtime |
+| `DATABASE_URL` | La *pooled* connection string de Neon (paso 1.2) |
+| `DIRECT_URL` | La *direct* connection string de Neon (paso 1.2) |
+| `JWT_SECRET` | Cualquier cadena larga y aleatoria (no tiene que salir de ningún lado, solo tiene que ser secreta e impredecible) |
+| `JWT_EXPIRES_IN_SECONDS` | `604800` (7 días) — déjalo así salvo que quieras sesiones más cortas/largas |
+| `CORS_ORIGIN` | La URL de Vercel — **este campo lo completas al final**, después del paso 4. Mientras tanto puedes dejar `https://localhost` como valor temporal |
+| `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | Del paso 2 |
+| `WHATSAPP_SALES_NUMBER` | Tu número de ventas en formato E.164 sin `+` (ej. `573001234567`) |
+| `SEED_ADMIN_EMAIL` | El email con el que vas a entrar al panel `/admin/login` |
+| `SEED_ADMIN_PASSWORD` | La contraseña de ese admin (mínimo 8 caracteres) |
 
-   `PORT` no lo definas: Render lo inyecta solo y el backend ya lo respeta.
+   No agregues `PORT`: Render lo inyecta solo y el backend ya lo respeta automáticamente.
 
-4. **Create Web Service**. Primer deploy corre la migración contra Neon y compila. Anota la URL, ej. `https://corazel-backend.onrender.com`.
-5. Verifica: `https://corazel-backend.onrender.com/api/health` → `{"success":true,"data":{"status":"ok",...}}`.
-6. Siembra los datos iniciales **una vez**, apuntando a Neon desde tu máquina (no se toca ningún archivo, solo variables de entorno en la terminal):
+### 3.4 Deploy y verificación
 
-```bash
-cd backend
-DATABASE_URL="<pooled de Neon>" DIRECT_URL="<direct de Neon>" \
-SEED_ADMIN_EMAIL="tu-email@real.com" SEED_ADMIN_PASSWORD="unaClaveFuerte123!" \
-npx prisma db seed
-```
+1. Click **"Create Web Service"** (o si ya lo habías creado, **"Save Changes"** después de pegar las variables — esto redespliega solo).
+2. Render muestra los logs del deploy en vivo. Deberías ver, en orden: instalación de dependencias → `Applying migration...` (Prisma) → `Seller de sistema listo` / `4 colecciones sembradas` / `7 categorías sembradas` / `Admin listo: ...` (tu seed) → build de Nest → `Your service is live`.
+3. Anota la URL que te da Render, arriba del todo de la página del servicio: `https://corazel-backend.onrender.com` (o el nombre que hayas puesto).
+4. Verifica en el navegador: `https://<tu-url>.onrender.com/api/health` debe mostrar `{"success":true,"data":{"status":"ok","service":"corazel-backend"}}`.
 
-   PowerShell: una línea por variable con `$env:NOMBRE="valor"` antes del `npx prisma db seed`.
+Si algo falla, la pestaña **"Logs"** del servicio (menú lateral izquierdo dentro del servicio) muestra el error exacto — casi siempre es una variable de entorno mal pegada (revisa que las connection strings de Neon no tengan saltos de línea de más).
 
 ---
 
-## 4. Frontend — Vercel
+## 4. Vercel — frontend (Angular)
 
-En Vercel **lo único que configuras a mano son las dos variables de entorno**. Todo lo demás (dónde está el proyecto dentro del monorepo, el comando de build, la carpeta de salida, generar `environment.prod.ts`) ya está resuelto por `vercel.json` en la **raíz del repo** — no hace falta tocar "Root Directory", "Build Command" ni "Output Directory" en el dashboard, Vercel los toma de ahí solo:
+El repo ya trae `vercel.json` en la raíz configurado para que **no tengas que tocar Root Directory, Build Command ni Output Directory** — Vercel los toma solos de ahí. Lo único manual son las variables de entorno.
 
-```json
-// vercel.json (raíz del repo)
-{
-  "buildCommand": "cd frontend && npm install && npm run build:prod",
-  "outputDirectory": "frontend/dist/frontend/browser"
-}
+### 4.1 Importar el proyecto
+
+1. Entra a **https://vercel.com/new**.
+2. Si es la primera vez, autoriza acceso a tu cuenta de GitHub.
+3. En la lista de repositorios, busca `CorazelMarketPlace` → botón **"Import"**.
+4. En la pantalla "Configure Project" que aparece:
+   - **Root Directory**: déjalo en `./` (el valor por defecto) — **no lo cambies**, `vercel.json` en la raíz ya le dice a Vercel cómo entrar a `frontend/`.
+   - **Framework Preset**: puede aparecer como "Other" — está bien, no hace falta cambiarlo, `vercel.json` fuerza el build command real.
+   - **Build and Output Settings**: no toques nada aquí, déjalos colapsados/por defecto.
+
+### 4.2 Variables de entorno (pegar el bloque completo)
+
+En esa misma pantalla de "Configure Project" hay una sección **"Environment Variables"** más abajo. Tiene un campo de texto donde puedes pegar contenido `.env` y Vercel lo detecta y separa solo en filas Key/Value (aparece un aviso tipo "Paste .env contents above and we'll parse them" o similar arriba del campo Key).
+
+1. Copia `frontend/.env.vercel.example` a `frontend/.env.vercel`.
+2. Complétalo:
+
+```
+API_URL=https://<tu-backend>.onrender.com/api
+WHATSAPP_SALES_NUMBER=573001234567
 ```
 
-`npm run build:prod` a su vez corre `frontend/scripts/set-env.js`, que genera `environment.prod.ts` a partir de las variables de entorno del build. No se edita ningún archivo del repo para desplegar ni para actualizar esos valores.
+   (`API_URL` es la URL de Render del paso 3.4 **+ `/api` al final** — es fácil olvidar el `/api`, sin eso el sitio no va a poder hablar con el backend.)
 
-1. [vercel.com/new](https://vercel.com/new) → **Import** el repo. Deja el Root Directory por defecto (la raíz) — no lo cambies.
-2. Pestaña **Settings → Environment Variables**, agrega solamente estas dos:
+3. Pega ese contenido completo en el campo de Environment Variables. Si no ves el parser automático, pega cada línea manualmente: **Key** = `API_URL`, **Value** = tu URL; **Key** = `WHATSAPP_SALES_NUMBER`, **Value** = tu número.
+4. Si ya habías importado el proyecto antes y estás agregando las variables después: **Settings → Environment Variables** (menú lateral izquierdo del proyecto) tiene el mismo campo de pegado.
 
-| Variable | Valor |
-|---|---|
-| `API_URL` | URL del backend en Render **+ `/api`**, ej. `https://corazel-backend.onrender.com/api` |
-| `WHATSAPP_SALES_NUMBER` | mismo número que pusiste en Render, ej. `573001234567` |
+### 4.3 Deploy y conectar con el backend
 
-   Si falta alguna, el build falla con un mensaje claro (`[set-env] Faltan variables de entorno requeridas: ...`) en vez de desplegar algo roto en silencio.
-
-3. **Deploy**. Vercel te da una URL tipo `https://corazel-marketplace.vercel.app`.
-4. Vuelve a Render → **Environment** → actualiza `CORS_ORIGIN` con esa URL (sin slash final) → guarda (redespliega solo).
-
-Cada vez que cambies `API_URL` o `WHATSAPP_SALES_NUMBER` a futuro (nuevo dominio, nuevo número de ventas), lo haces en **Vercel → Environment Variables** y disparas un redeploy — nunca editando `environment.prod.ts` a mano, porque el build lo vuelve a generar y lo pisaría.
+1. Click **"Deploy"**. Vercel muestra el progreso del build en vivo (debe ejecutar `cd frontend && npm install && npm run build:prod`).
+2. Al terminar, te da la URL: `https://corazel-marketplace.vercel.app` (o similar, según el nombre del proyecto).
+3. Vuelve a **Render → tu servicio → Environment**, edita `CORS_ORIGIN` reemplazando el valor temporal por esta URL real (sin `/` al final) → **Save Changes** (redespliega solo).
+4. Abre la URL de Vercel y entra a `/catalogo`: si carga sin errores en la consola del navegador (F12 → pestaña Console, no debe haber errores en rojo de "CORS" o "Failed to fetch"), quedó todo conectado.
 
 ---
 
@@ -161,22 +171,24 @@ Cada vez que cambies `API_URL` o `WHATSAPP_SALES_NUMBER` a futuro (nuevo dominio
 
 - [ ] `https://<backend>.onrender.com/api/health` responde `ok`
 - [ ] `https://<frontend>.vercel.app` carga el inicio con la paleta de marca
-- [ ] `/catalogo` muestra categorías y colecciones (confirma que el seed corrió contra Neon)
-- [ ] Login en `/admin/login` funciona con `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD`
-- [ ] Crear un producto de prueba con imagen desde el admin — aparece en Cloudinary Media Library
+- [ ] `/catalogo` muestra las 4 colecciones y las 7 categorías (confirma que el seed automático corrió)
+- [ ] `/admin/login` funciona con el `SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD` que pegaste en Render
+- [ ] Crear un producto de prueba con imagen desde el admin — aparece en Cloudinary → Media Library
 - [ ] "Finalizar pedido por WhatsApp" abre WhatsApp con el mensaje prellenado al número correcto
-- [ ] Cambiar la contraseña del admin sembrado
+- [ ] `CORS_ORIGIN` en Render apunta a la URL real de Vercel (no al valor temporal)
 
 ## 6. Qué esperar del free tier
 
-- **Render** duerme el backend tras ~15 min sin tráfico; el primer request tras eso tarda ~30-50s.
-- **Neon** se autosuspende tras inactividad prolongada; revive sola en el siguiente query, sin pérdida de datos.
-- **Cloudinary free** alcanza para un catálogo inicial de decenas de productos con varias fotos cada uno.
+- **Render**: el servicio se duerme tras ~15 minutos sin tráfico. El primer visitante después de eso espera ~30-50 segundos en el primer request (se ve como que el sitio "no carga" un rato — es normal, no está roto).
+- **Neon**: se autosuspende tras inactividad prolongada; revive sola en el siguiente query, sin pérdida de datos, con unos segundos extra de espera.
+- **Cloudinary free**: 25 créditos/mes, alcanza para un catálogo inicial de decenas de productos con varias fotos cada uno.
 
-Nada de esto requiere cambios de código — son límites de infraestructura que se resuelven con un upgrade de plan cuando haga falta, sin tocar el repo.
+Nada de esto se arregla con código — son límites de infraestructura que se resuelven subiendo de plan en el dashboard correspondiente cuando haga falta.
 
-## 7. Dominio propio (opcional)
+## 7. Actualizar valores después del deploy (nuevo número, nuevo dominio, etc.)
 
-1. **Vercel**: Project Settings → Domains → agrega tu dominio, sigue las instrucciones de DNS.
-2. **Render**: Settings → Custom Domain si quieres `api.tudominio.com` en vez de `onrender.com`.
-3. Actualiza `CORS_ORIGIN` (Render) y `API_URL` (Vercel) con los dominios finales — variables de entorno, no código — y redeploy.
+Todo se cambia en dashboards, nunca en el repo:
+
+- **Nuevo número de WhatsApp**: cambia `WHATSAPP_SALES_NUMBER` en Render *y* en Vercel (están duplicadas, una la usa el backend y otra el build del frontend) → guarda en ambos → cada uno redespliega solo.
+- **Nuevo dominio propio**: Vercel → Settings → Domains → agrega el dominio, sigue las instrucciones de DNS que te da. Luego actualiza `CORS_ORIGIN` en Render y `API_URL` en Vercel con las URLs finales.
+- **Rotar el JWT_SECRET o las credenciales de Cloudinary**: edítalas directo en Render → Environment → guarda. El backend las toma en el siguiente deploy/reinicio.

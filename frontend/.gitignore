@@ -28,6 +28,9 @@ yarn-error.log
 !.vscode/extensions.json
 .history/*
 
+# Bloque listo para pegar en Vercel (Settings > Environment Variables) — ver DEPLOYMENT.md
+.env.vercel
+
 # Miscellaneous
 /.angular/cache
 .sass-cache/
