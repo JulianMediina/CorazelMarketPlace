@@ -1,0 +1,157 @@
+// Corazel — schema.prisma
+// Ver .claude/CLAUDE.md (raíz del repo) para el contexto completo del negocio.
+//
+// Nota de diseño: el negocio hoy es single-vendor (una sola marca, Corazel),
+// pero el modelo incluye `Seller` desde ya para no bloquear un futuro
+// marketplace multi-vendedor. En el MVP existe un único Seller "de sistema"
+// y no hay UI/flujo para gestionar vendedores.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Conexión directa (sin pgbouncer/pooler) para migraciones — Neon/Supabase
+  // exponen una URL "pooled" para runtime y otra directa para esto.
+  // Si tu proveedor no distingue las dos, usa el mismo valor en ambas.
+  directUrl = env("DIRECT_URL")
+}
+
+// ---------- Auth / administración ----------
+
+enum AdminRole {
+  ADMIN
+}
+
+model Admin {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  nombre       String
+  role         AdminRole @default(ADMIN)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("admins")
+}
+
+// ---------- Vendedores (marketplace-ready, no usado en MVP) ----------
+
+model Seller {
+  id        String   @id @default(uuid())
+  // En el MVP solo existe un Seller "Corazel" (seed). No hay onboarding
+  // de vendedores ni panel propio para ellos todavía.
+  nombre    String
+  slug      String   @unique
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  productos Product[]
+
+  @@map("sellers")
+}
+
+// ---------- Catálogo ----------
+
+model Category {
+  id          String   @id @default(uuid())
+  nombre      String   @unique
+  slug        String   @unique
+  descripcion String?
+  orden       Int      @default(0)
+  activa      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  productos Product[]
+
+  @@map("categories")
+}
+
+model Collection {
+  id          String   @id @default(uuid())
+  // Aura, Afrodita, Atenea, Isis — ver manual de identidad de marca.
+  nombre      String   @unique
+  slug        String   @unique
+  esencia     String? // frase corta de la esencia de la colección
+  descripcion String?
+  imagenUrl   String?
+  orden       Int      @default(0)
+  activa      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  productos Product[]
+
+  @@map("collections")
+}
+
+enum Talla {
+  XS
+  S
+  M
+  L
+  XL
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  nombre      String
+  slug        String   @unique
+  descripcion String
+  precio      Decimal  @db.Decimal(10, 2)
+  destacado   Boolean  @default(false)
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  sellerId String
+  seller   Seller @relation(fields: [sellerId], references: [id])
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  collectionId String
+  collection   Collection @relation(fields: [collectionId], references: [id])
+
+  imagenes  ProductImage[]
+  variantes ProductVariant[]
+
+  @@index([categoryId])
+  @@index([collectionId])
+  @@index([sellerId])
+  @@map("products")
+}
+
+model ProductImage {
+  id       String @id @default(uuid())
+  url      String
+  // publicId de Cloudinary, útil para poder borrar/transformar la imagen después.
+  publicId String
+  orden    Int    @default(0)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_images")
+}
+
+// Combinación talla x color x stock de un producto.
+model ProductVariant {
+  id       String  @id @default(uuid())
+  talla    Talla
+  color    String
+  colorHex String?
+  stock    Int     @default(0)
+  sku      String? @unique
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, talla, color])
+  @@map("product_variants")
+}

@@ -1,0 +1,12 @@
+# Editores / SO
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+.claude
+DEPLOYMENT.md
+Mini_Manual_Identidad_Visual_Corazel_final.pdf

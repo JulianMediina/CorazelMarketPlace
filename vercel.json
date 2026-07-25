@@ -1,0 +1,6 @@
+{
+  "installCommand": "echo 'La instalacion ocurre dentro de buildCommand (repo es un monorepo)'",
+  "buildCommand": "cd frontend && npm install && npm run build:prod",
+  "outputDirectory": "frontend/dist/frontend/browser",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+}
