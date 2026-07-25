@@ -129,7 +129,7 @@ Si algo falla, la pestaña **"Logs"** del servicio (menú lateral izquierdo dent
 
 ## 4. Vercel — frontend (Angular)
 
-El repo ya trae `vercel.json` en la raíz configurado para que **no tengas que tocar Root Directory, Build Command ni Output Directory** — Vercel los toma solos de ahí. Lo único manual son las variables de entorno.
+El repo es un monorepo (`backend/` + `frontend/`), así que Vercel necesita saber que el proyecto real está dentro de `frontend/`. Eso se configura **una sola vez** al importar (campo "Root Directory"); de ahí en adelante `frontend/vercel.json` ya deja el build command, el output directory y la generación de `environment.prod.ts` en automático — lo único que tocas en cada deploy futuro son las variables de entorno.
 
 ### 4.1 Importar el proyecto
 
@@ -137,9 +137,9 @@ El repo ya trae `vercel.json` en la raíz configurado para que **no tengas que t
 2. Si es la primera vez, autoriza acceso a tu cuenta de GitHub.
 3. En la lista de repositorios, busca `CorazelMarketPlace` → botón **"Import"**.
 4. En la pantalla "Configure Project" que aparece:
-   - **Root Directory**: déjalo en `./` (el valor por defecto) — **no lo cambies**, `vercel.json` en la raíz ya le dice a Vercel cómo entrar a `frontend/`.
-   - **Framework Preset**: puede aparecer como "Other" — está bien, no hace falta cambiarlo, `vercel.json` fuerza el build command real.
-   - **Build and Output Settings**: no toques nada aquí, déjalos colapsados/por defecto.
+   - **Root Directory**: click en **"Edit"** al lado del campo → selecciona/escribe `frontend` → confirma. Vercel suele detectarlo solo (por el `angular.json` que hay ahí) y sugerirlo automáticamente — si ya aparece `frontend` seleccionado, no hace falta tocarlo.
+   - **Framework Preset**: con Root Directory en `frontend`, Vercel detecta "Angular" solo. No hace falta cambiarlo — `frontend/vercel.json` igual fuerza el build command real.
+   - **Build and Output Settings**: no toques nada aquí, déjalos colapsados/por defecto (los toma de `frontend/vercel.json`).
 
 ### 4.2 Variables de entorno (pegar el bloque completo)
 
