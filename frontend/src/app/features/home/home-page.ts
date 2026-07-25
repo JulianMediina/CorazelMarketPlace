@@ -12,15 +12,22 @@ import { ProductCardComponent } from '../../shared/components/product-card/produ
   imports: [RouterLink, ButtonComponent, ProductCardComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="bg-corazel-rosa-pastel/50 px-4 py-16 text-center sm:py-24">
-      <p class="font-body text-xs font-semibold tracking-[0.2em] text-corazel-borgona/70 uppercase">
-        Corazél Lencería
-      </p>
-      <h1 class="mx-auto mt-3 max-w-xl font-brand text-4xl text-corazel-borgona sm:text-5xl">
-        Realza tu cuerpo, celebra quién eres.
-      </h1>
-      <div class="mt-8">
-        <app-button variant="primary" routerLink="/catalogo">Descubrir colección</app-button>
+    <section class="relative overflow-hidden bg-corazel-rosa-pastel/50 px-4 py-16 text-center sm:py-24">
+      <img
+        src="/logo-corazel.jpeg"
+        alt=""
+        class="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-10 mix-blend-multiply"
+      />
+      <div class="relative">
+        <p class="font-body text-xs font-semibold tracking-[0.2em] text-corazel-borgona/70 uppercase">
+          Corazél Lencería
+        </p>
+        <h1 class="mx-auto mt-3 max-w-xl font-brand text-4xl text-corazel-borgona sm:text-5xl">
+          Realza tu cuerpo, celebra quién eres.
+        </h1>
+        <div class="mt-8">
+          <app-button variant="primary" routerLink="/catalogo">Descubrir colección</app-button>
+        </div>
       </div>
     </section>
 

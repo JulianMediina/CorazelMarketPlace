@@ -13,7 +13,8 @@ import { CartService } from '../../core/services/cart.service';
       class="sticky top-0 z-30 border-b border-corazel-champagne/40 bg-corazel-marfil/95 backdrop-blur"
     >
       <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        <a routerLink="/" class="font-brand text-2xl tracking-wide text-corazel-borgona">
+        <a routerLink="/" class="flex items-center gap-2 font-brand text-2xl tracking-wide text-corazel-borgona">
+          <img src="/logo-corazel.jpeg" alt="" class="h-9 w-9 rounded-full object-cover" />
           Corazél
         </a>
 
