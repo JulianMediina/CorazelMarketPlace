@@ -28,6 +28,11 @@ export class WhatsappService {
     return this.buildLink(mensaje);
   }
 
+  /** Link genérico para el punto de entrada persistente (header/bottom-nav), sin producto en contexto. */
+  buildGeneralInquiryLink(): string {
+    return this.buildLink('Hola Corazél, quiero más información sobre sus productos.');
+  }
+
   private buildLink(mensaje: string): string {
     const numero = environment.whatsappSalesNumber;
     return `https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`;

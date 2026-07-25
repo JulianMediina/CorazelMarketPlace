@@ -10,3 +10,6 @@ Thumbs.db
 .claude
 DEPLOYMENT.md
 Mini_Manual_Identidad_Visual_Corazel_final.pdf
+
+.vercel
+.env*

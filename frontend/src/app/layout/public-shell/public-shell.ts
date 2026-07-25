@@ -11,9 +11,9 @@ import { HeaderComponent } from '../header/header';
   imports: [RouterOutlet, HeaderComponent, FooterComponent, BottomNavComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="flex min-h-screen flex-col">
+    <div class="flex min-h-dvh flex-col">
       <app-header />
-      <main class="flex-1">
+      <main class="flex-1 pb-20 sm:pb-0">
         <router-outlet />
       </main>
       <app-footer />

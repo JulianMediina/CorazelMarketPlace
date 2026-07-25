@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -15,11 +15,26 @@ import { CatalogService } from '../../../core/services/catalog.service';
 
 const TALLAS: Talla[] = ['XS', 'S', 'M', 'L', 'XL'];
 
+/** Colores frecuentes en lencería, sugeridos vía <datalist> para reducir tipeo y errores de captura. */
+const COLORES_SUGERIDOS = [
+  'Negro',
+  'Blanco',
+  'Rojo',
+  'Rosa',
+  'Rosa pastel',
+  'Borgoña',
+  'Beige',
+  'Champagne',
+  'Dorado',
+  'Nude',
+];
+
 @Component({
   selector: 'app-product-form-page',
   standalone: true,
   imports: [
     ReactiveFormsModule,
+    RouterLink,
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
@@ -29,40 +44,75 @@ const TALLAS: Talla[] = ['XS', 'S', 'M', 'L', 'XL'];
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <h1 class="font-brand text-2xl text-corazel-borgona">{{ editando() ? 'Editar producto' : 'Nuevo producto' }}</h1>
+    <div class="mb-6 flex items-center justify-between">
+      <div>
+        <a
+          routerLink="/admin/productos"
+          class="inline-flex items-center gap-1 text-xs font-medium text-corazel-borgona/60 hover:text-corazel-borgona"
+        >
+          <mat-icon class="!text-base">arrow_back</mat-icon>
+          Productos
+        </a>
+        <h1 class="mt-1 font-brand text-2xl text-corazel-borgona">
+          {{ editando() ? 'Editar producto' : 'Nuevo producto' }}
+        </h1>
+      </div>
+    </div>
 
-    <form class="mt-6 flex max-w-3xl flex-col gap-2" [formGroup]="form" (ngSubmit)="submit()">
-      <mat-form-field appearance="outline">
-        <mat-label>Nombre</mat-label>
-        <input matInput formControlName="nombre" (blur)="autoSlug()" />
-      </mat-form-field>
+    <form
+      class="flex max-w-3xl flex-col gap-8 rounded-3xl bg-corazel-marfil p-6 shadow-sm ring-1 ring-corazel-champagne/40 sm:p-8"
+      [formGroup]="form"
+      (ngSubmit)="submit()"
+    >
+      <!-- Información general -->
+      <section class="flex flex-col gap-3">
+        <h2 class="font-brand text-lg text-corazel-borgona">Información general</h2>
 
-      <mat-form-field appearance="outline">
-        <mat-label>Slug (URL)</mat-label>
-        <input matInput formControlName="slug" />
-      </mat-form-field>
-
-      <mat-form-field appearance="outline">
-        <mat-label>Descripción</mat-label>
-        <textarea matInput formControlName="descripcion" rows="3"></textarea>
-      </mat-form-field>
-
-      <mat-form-field appearance="outline">
-        <mat-label>Precio (COP)</mat-label>
-        <input matInput type="number" formControlName="precio" />
-      </mat-form-field>
-
-      <div class="flex gap-4">
-        <mat-form-field appearance="outline" class="flex-1">
-          <mat-label>Categoría</mat-label>
-          <mat-select formControlName="categoryId">
-            @for (categoria of categorias(); track categoria.id) {
-              <mat-option [value]="categoria.id">{{ categoria.nombre }}</mat-option>
-            }
-          </mat-select>
+        <mat-form-field appearance="outline">
+          <mat-label>Nombre del producto</mat-label>
+          <input matInput formControlName="nombre" (blur)="autoSlug()" placeholder="Ej. Body Aura encaje" />
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="flex-1">
+        @if (mostrarSlug()) {
+          <mat-form-field appearance="outline">
+            <mat-label>URL (slug)</mat-label>
+            <input matInput formControlName="slug" />
+            <mat-hint>Se genera sola desde el nombre; solo cámbiala si sabes lo que haces.</mat-hint>
+          </mat-form-field>
+        } @else {
+          <button
+            type="button"
+            class="-mt-1 self-start text-xs text-corazel-borgona/50 underline hover:text-corazel-borgona"
+            (click)="mostrarSlug.set(true)"
+          >
+            URL: /producto/{{ form.controls.slug.value || '...' }} · editar
+          </button>
+        }
+
+        <mat-form-field appearance="outline">
+          <mat-label>Descripción</mat-label>
+          <textarea matInput formControlName="descripcion" rows="3" placeholder="Tela, ajuste, detalles..."></textarea>
+        </mat-form-field>
+
+        <div class="grid grid-cols-2 gap-3">
+          <mat-form-field appearance="outline">
+            <mat-label>Precio</mat-label>
+            <span matTextPrefix>$&nbsp;</span>
+            <input matInput type="number" formControlName="precio" min="0" />
+            <mat-hint>Pesos colombianos (COP)</mat-hint>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Categoría</mat-label>
+            <mat-select formControlName="categoryId">
+              @for (categoria of categorias(); track categoria.id) {
+                <mat-option [value]="categoria.id">{{ categoria.nombre }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <mat-form-field appearance="outline">
           <mat-label>Colección</mat-label>
           <mat-select formControlName="collectionId">
             @for (coleccion of colecciones(); track coleccion.id) {
@@ -70,86 +120,134 @@ const TALLAS: Talla[] = ['XS', 'S', 'M', 'L', 'XL'];
             }
           </mat-select>
         </mat-form-field>
-      </div>
 
-      <div class="flex gap-6">
-        <mat-checkbox formControlName="destacado">Destacado</mat-checkbox>
-        <mat-checkbox formControlName="activo">Activo</mat-checkbox>
-      </div>
+        <div class="flex gap-6 pt-1">
+          <mat-checkbox formControlName="destacado">Destacado en inicio</mat-checkbox>
+          <mat-checkbox formControlName="activo">Visible en la tienda</mat-checkbox>
+        </div>
+      </section>
 
       <!-- Imágenes -->
-      <div class="mt-4">
-        <p class="mb-2 text-sm font-semibold text-corazel-borgona">Imágenes</p>
+      <section class="flex flex-col gap-3 border-t border-corazel-champagne/30 pt-6">
+        <h2 class="font-brand text-lg text-corazel-borgona">Imágenes</h2>
         <div class="flex flex-wrap gap-3">
           @for (imagen of imagenes.controls; track $index) {
-            <div class="relative h-24 w-24 overflow-hidden rounded-lg bg-corazel-rosa-pastel">
+            <div class="relative h-24 w-24 overflow-hidden rounded-xl bg-corazel-rosa-pastel">
               <img [src]="imagen.value.url" class="h-full w-full object-cover" />
               <button
                 type="button"
-                class="absolute top-0.5 right-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-corazel-borgona text-corazel-marfil"
+                class="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-corazel-borgona text-corazel-marfil"
                 (click)="imagenes.removeAt($index)"
+                aria-label="Quitar imagen"
               >
                 <mat-icon class="!text-base">close</mat-icon>
               </button>
             </div>
           }
           <label
-            class="flex h-24 w-24 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-corazel-champagne text-corazel-borgona/50"
+            class="flex h-24 w-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-corazel-champagne text-corazel-borgona/50 hover:border-corazel-borgona/50 hover:text-corazel-borgona"
           >
-            {{ subiendoImagen() ? '...' : '+' }}
+            @if (subiendoImagen()) {
+              <span class="text-xs">Subiendo…</span>
+            } @else {
+              <mat-icon>add_photo_alternate</mat-icon>
+              <span class="text-xs">Agregar</span>
+            }
             <input type="file" accept="image/*" class="hidden" (change)="onImagenSeleccionada($event)" />
           </label>
         </div>
-      </div>
+        <p class="text-xs text-corazel-borgona/50">La primera imagen es la que se muestra en el catálogo.</p>
+      </section>
 
-      <!-- Variantes: talla x color x stock -->
-      <div class="mt-4">
+      <!-- Variantes -->
+      <section class="flex flex-col gap-3 border-t border-corazel-champagne/30 pt-6">
         <div class="flex items-center justify-between">
-          <p class="text-sm font-semibold text-corazel-borgona">Variantes (talla · color · stock)</p>
-          <button mat-button type="button" (click)="agregarVariante()">+ Agregar variante</button>
+          <h2 class="font-brand text-lg text-corazel-borgona">Tallas, colores y stock</h2>
+          <button
+            mat-stroked-button
+            type="button"
+            class="!rounded-full"
+            (click)="agregarVariante()"
+          >
+            <mat-icon>add</mat-icon>
+            Agregar
+          </button>
         </div>
 
-        <div class="mt-2 flex flex-col gap-2">
+        @if (variantes.length > 0) {
+          <div class="grid grid-cols-[4.5rem_1fr_4.5rem_2.5rem] gap-2 px-1 text-xs font-semibold text-corazel-borgona/60 uppercase">
+            <span>Talla</span>
+            <span>Color</span>
+            <span>Stock</span>
+            <span></span>
+          </div>
+        }
+
+        <div class="flex flex-col gap-2">
           @for (variante of variantes.controls; track $index) {
-            <div class="flex items-center gap-2" [formGroup]="$any(variante)">
-              <mat-form-field appearance="outline" class="w-24">
-                <mat-label>Talla</mat-label>
-                <mat-select formControlName="talla">
-                  @for (talla of tallas; track talla) {
-                    <mat-option [value]="talla">{{ talla }}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
+            <div class="grid grid-cols-[4.5rem_1fr_4.5rem_2.5rem] items-center gap-2" [formGroup]="$any(variante)">
+              <select
+                formControlName="talla"
+                class="h-11 rounded-lg border border-corazel-champagne bg-transparent px-2 text-sm text-corazel-borgona focus:border-corazel-borgona focus:outline-none"
+              >
+                @for (talla of tallas; track talla) {
+                  <option [value]="talla">{{ talla }}</option>
+                }
+              </select>
 
-              <mat-form-field appearance="outline" class="flex-1">
-                <mat-label>Color</mat-label>
-                <input matInput formControlName="color" />
-              </mat-form-field>
+              <input
+                formControlName="color"
+                list="colores-sugeridos"
+                placeholder="Color"
+                class="h-11 rounded-lg border border-corazel-champagne bg-transparent px-3 text-sm text-corazel-borgona placeholder:text-corazel-borgona/40 focus:border-corazel-borgona focus:outline-none"
+              />
 
-              <mat-form-field appearance="outline" class="w-24">
-                <mat-label>Stock</mat-label>
-                <input matInput type="number" formControlName="stock" />
-              </mat-form-field>
+              <input
+                formControlName="stock"
+                type="number"
+                min="0"
+                placeholder="0"
+                class="h-11 rounded-lg border border-corazel-champagne bg-transparent px-2 text-center text-sm text-corazel-borgona placeholder:text-corazel-borgona/40 focus:border-corazel-borgona focus:outline-none"
+              />
 
-              <button mat-icon-button type="button" (click)="variantes.removeAt($index)" aria-label="Quitar variante">
-                <mat-icon>delete</mat-icon>
+              <button
+                mat-icon-button
+                type="button"
+                (click)="variantes.removeAt($index)"
+                aria-label="Quitar variante"
+                class="!text-corazel-borgona/40 hover:!text-corazel-borgona"
+              >
+                <mat-icon>delete_outline</mat-icon>
               </button>
             </div>
           }
           @if (variantes.length === 0) {
-            <p class="text-xs text-corazel-borgona/50">Agrega al menos una variante (talla/color/stock).</p>
+            <p class="text-xs text-corazel-borgona/50">Agrega al menos una combinación de talla, color y stock.</p>
           }
         </div>
-      </div>
+
+        <datalist id="colores-sugeridos">
+          @for (color of coloresSugeridos; track color) {
+            <option [value]="color"></option>
+          }
+        </datalist>
+      </section>
 
       @if (error()) {
-        <p class="mt-2 text-sm text-red-600">{{ error() }}</p>
+        <p class="text-sm text-red-600">{{ error() }}</p>
       }
 
-      <div class="mt-6 flex gap-3">
-        <button mat-flat-button color="primary" type="submit" [disabled]="form.invalid || variantes.length === 0 || guardando()">
-          {{ guardando() ? 'Guardando…' : 'Guardar' }}
+      <div class="flex items-center gap-3 border-t border-corazel-champagne/30 pt-6">
+        <button
+          mat-flat-button
+          color="primary"
+          type="submit"
+          class="!h-12 !rounded-full !px-8"
+          [disabled]="form.invalid || variantes.length === 0 || guardando()"
+        >
+          {{ guardando() ? 'Guardando…' : 'Guardar producto' }}
         </button>
+        <a routerLink="/admin/productos" class="text-sm text-corazel-borgona/60 hover:text-corazel-borgona">Cancelar</a>
       </div>
     </form>
   `,
@@ -162,11 +260,13 @@ export class ProductFormPageComponent implements OnInit {
   private readonly adminProducts = inject(AdminProductsService);
 
   protected readonly tallas = TALLAS;
+  protected readonly coloresSugeridos = COLORES_SUGERIDOS;
   protected readonly categorias = signal<Category[]>([]);
   protected readonly colecciones = signal<Collection[]>([]);
   protected readonly guardando = signal(false);
   protected readonly subiendoImagen = signal(false);
   protected readonly error = signal<string | null>(null);
+  protected readonly mostrarSlug = signal(false);
 
   private productId: string | null = null;
   protected readonly editando = signal(false);
